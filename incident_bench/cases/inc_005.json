@@ -1,0 +1,21 @@
+{
+  "id": "inc_005",
+  "title": "catalog: デプロイ後に価格が誤表示（古いキャッシュ提供）",
+  "difficulty": "hard",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "catalog 価格不整合の問い合わせ増 / キャッシュヒット率 異常上昇",
+    "metrics": {"cache_hit_rate": 0.997, "error_rate": 0.01},
+    "recent_deploy": {"service": "catalog-api", "revision": "catalog-api-00027", "deployed_min_ago": 20, "note": "価格モデル変更"},
+    "logs_sample": ["serving cached price for SKU (stale)", "TTL not invalidated after price model change"]
+  },
+  "ground_truth": {
+    "root_cause_category": "data_cache_issue",
+    "root_cause_keywords": ["キャッシュ", "stale", "TTL", "価格"],
+    "expected_tool_trajectory": ["read_logs", "read_metrics", "diff_revision", "search_runbook"],
+    "recommended_remediation_type": "cache_flush",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["cache", "not-rollback"]
+}

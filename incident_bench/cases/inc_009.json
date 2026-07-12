@@ -1,0 +1,22 @@
+{
+  "id": "inc_009",
+  "title": "inventory-api: デプロイで在庫減算が二重適用（rollbackでは既存の不整合を解消できない）",
+  "difficulty": "hard",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "在庫数の不整合報告 / 一部SKUがマイナス在庫",
+    "metrics": {"negative_stock_skus": 37, "error_rate": 0.004},
+    "recent_deploy": {"service": "inventory-api", "revision": "inventory-api-00076", "prev_revision": "inventory-api-00075", "deployed_min_ago": 50, "note": "減算処理のリファクタ"},
+    "logs_sample": ["stock decrement applied twice for order", "idempotency key not honored after rev 76"],
+    "diff_summary": "rev 76 が冪等キー判定を誤り、リトライ時に二重減算。既に書き込まれたデータは rollback では戻らない。"
+  },
+  "ground_truth": {
+    "root_cause_category": "deploy_regression",
+    "root_cause_keywords": ["二重減算", "冪等キー", "rev 76", "データ不整合"],
+    "expected_tool_trajectory": ["read_logs", "read_metrics", "diff_revision", "search_past_incidents"],
+    "recommended_remediation_type": "code_fix",
+    "is_reversible": false,
+    "auto_remediable": false
+  },
+  "tags": ["deploy", "code_fix", "not-rollback", "tests-judgment", "hitl", "irreversible-writes"]
+}

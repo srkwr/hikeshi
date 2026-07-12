@@ -1,0 +1,17 @@
+{
+ "fetched_at": "2026-07-12T08:08:08+00:00",
+ "kev_count": 30,
+ "ghsa_count": 20,
+ "advisory_docs": [
+  "ghsa-GHSA-56mp-4f3v-fgj2.md",
+  "ghsa-GHSA-g936-7jqj-mwv8.md",
+  "kev-CVE-2026-35273.md",
+  "kev-CVE-2026-45321.md",
+  "kev-CVE-2026-48027.md",
+  "kev-CVE-2026-50751.md"
+ ],
+ "source_urls": {
+  "kev": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+  "ghsa": "https://api.github.com/advisories"
+ }
+}

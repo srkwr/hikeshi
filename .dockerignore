@@ -1,0 +1,30 @@
+# console イメージのビルドコンテキスト（リポジトリ root）から除外するもの。
+# Dockerfile は必要なパッケージだけを COPY するが、コンテキスト転送を軽くし
+# 機微資料（deck/research/scripts）や巨大物（.venv）の混入を確実に防ぐ。
+.git
+.github
+.venv
+venv
+**/__pycache__
+*.pyc
+*.pyo
+.mypy_cache
+.pytest_cache
+.ruff_cache
+*.egg-info
+hikeshi.egg-info
+.DS_Store
+out
+dist
+node_modules
+.env
+.env.*
+*.evalset.json.local
+
+# 公開リポでも image でも不要（機微資料・第三者PDF・個人情報スクリプト・デッキ）
+deck
+research
+scripts
+docs
+brand
+tests

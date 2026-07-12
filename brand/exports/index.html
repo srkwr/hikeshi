@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hikeshi — 書き出しアセット一覧</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{--kinari:#F4EFE6;--sumi:#1C1C1C;--shu:#B8392C;--line:#E3DCCD;--muted:#8A7F70;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--kinari);font-family:'Space Grotesk',sans-serif;color:var(--sumi);}
+  .wrap{max-width:1080px;margin:0 auto;padding:56px 40px 90px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--shu);}
+  h1{font-size:44px;font-weight:600;letter-spacing:-.02em;margin:16px 0 0;}
+  .lead{font-size:16px;color:#6b6253;margin:12px 0 0;max-width:560px;line-height:1.6;}
+  h2{font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em;}
+  .sec{margin-top:60px;border-top:1px solid var(--line);padding-top:24px;}
+  .sec .no{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--shu);margin-right:14px;}
+  .note{font-size:14px;color:#6b6253;margin:10px 0 26px;}
+  .grid{display:grid;gap:18px;}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  .card{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;}
+  .frame{height:170px;display:flex;align-items:center;justify-content:center;}
+  .checker{background-image:linear-gradient(45deg,#e7dfd0 25%,transparent 25%),linear-gradient(-45deg,#e7dfd0 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e7dfd0 75%),linear-gradient(-45deg,transparent 75%,#e7dfd0 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;background-color:var(--kinari);}
+  .dark{background:var(--sumi);}
+  .cap{padding:11px 15px;border-top:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--muted);display:flex;justify-content:space-between;gap:8px;}
+  .row{display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap;padding:26px;border:1px solid var(--line);border-radius:6px;background:#fff;}
+  .row .it{display:flex;flex-direction:column;align-items:center;gap:9px;}
+  .row .it span{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);}
+  img{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">HIKESHI · EXPORT ASSETS</div>
+  <h1>書き出しアセット一覧</h1>
+  <p class="lead">確定マーク（菱環・入れ子実芯）のSVG・透過PNG・favicon・アプリアイコン一式。フォルダごとダウンロードできます。</p>
+
+  <div class="sec">
+    <div><span class="no">SVG</span><h2 style="display:inline;">ベクター（拡大自在）</h2></div>
+    <p class="note">印刷・大判・実装の基準。3配色。</p>
+    <div class="grid g3">
+      <div class="card"><div class="frame checker"><img src="svg/hikeshi-mark.svg" width="120" height="120" /></div><div class="cap"><span>hikeshi-mark.svg</span><span>PRIMARY</span></div></div>
+      <div class="card"><div class="frame checker"><img src="svg/hikeshi-mark-mono.svg" width="120" height="120" /></div><div class="cap"><span>…-mono.svg</span><span>墨</span></div></div>
+      <div class="card"><div class="frame dark"><img src="svg/hikeshi-mark-reversed.svg" width="120" height="120" /></div><div class="cap"><span>…-reversed.svg</span><span>反転</span></div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div><span class="no">PNG</span><h2 style="display:inline;">透過PNG（プライマリ）</h2></div>
+    <p class="note">1024 / 512 / 256 / 128 / 64 / 32 / 16 px。背景透過。</p>
+    <div class="row">
+      <div class="it checker" style="padding:10px;border-radius:4px;"><img src="png/hikeshi-mark-128.png" width="96" height="96" /></div>
+      <div class="it"><img src="png/hikeshi-mark-64.png" width="64" height="64" /><span>64</span></div>
+      <div class="it"><img src="png/hikeshi-mark-32.png" width="32" height="32" /><span>32</span></div>
+      <div class="it"><img src="png/hikeshi-mark-16.png" width="16" height="16" /><span>16</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div><span class="no">PNG</span><h2 style="display:inline;">透過PNG（反転・暗地用）</h2></div>
+    <p class="note">1024 / 512 / 128 px。暗い背景で使用。</p>
+    <div class="row dark" style="border:none;">
+      <div class="it"><img src="png/hikeshi-mark-reversed-128.png" width="96" height="96" /></div>
+      <div class="it"><img src="png/hikeshi-mark-reversed-512.png" width="48" height="48" /><span style="color:#9a8f80;">scaled</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div><span class="no">ICON</span><h2 style="display:inline;">favicon</h2></div>
+    <p class="note">favicon-16 / 32 / 48（透過）＋ apple-touch-icon-180（生成り地）。</p>
+    <div class="row">
+      <div class="it"><img src="favicon/favicon-48.png" width="48" height="48" /><span>48</span></div>
+      <div class="it"><img src="favicon/favicon-32.png" width="32" height="32" /><span>32</span></div>
+      <div class="it"><img src="favicon/favicon-16.png" width="16" height="16" /><span>16</span></div>
+      <div class="it"><img src="favicon/apple-touch-icon-180.png" width="90" height="90" style="border-radius:18px;" /><span>apple-touch 180</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div><span class="no">ICON</span><h2 style="display:inline;">アプリアイコン（角丸）</h2></div>
+    <p class="note">1024px（512も同梱）。朱地・墨地・生成り地。</p>
+    <div class="grid g3">
+      <div class="card"><div class="frame"><img src="app-icon/app-shu-1024.png" width="128" height="128" style="border-radius:28px;" /></div><div class="cap"><span>app-shu</span><span>朱地</span></div></div>
+      <div class="card"><div class="frame"><img src="app-icon/app-sumi-1024.png" width="128" height="128" style="border-radius:28px;" /></div><div class="cap"><span>app-sumi</span><span>墨地</span></div></div>
+      <div class="card"><div class="frame"><img src="app-icon/app-kinari-1024.png" width="128" height="128" style="border-radius:28px;border:1px solid var(--line);" /></div><div class="cap"><span>app-kinari</span><span>生成り地</span></div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

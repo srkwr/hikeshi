@@ -1,0 +1,22 @@
+{
+  "id": "inc_017",
+  "title": "recommend-api: デプロイで特徴量の正規化が壊れCTR急落（クリーンに巻き戻し可）",
+  "difficulty": "hard",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "recommend CTR 4.1% -> 1.2% / モデル入力の分布が異常",
+    "metrics": {"ctr": [0.041, 0.039, 0.018, 0.012], "error_rate": 0.002, "feature_drift_score": 0.87},
+    "recent_deploy": {"service": "recommend-api", "revision": "recommend-api-00099", "prev_revision": "recommend-api-00098", "deployed_min_ago": 25, "note": "特徴量正規化の実装変更"},
+    "logs_sample": ["feature normalization producing NaN-clamped zeros after rev 99", "no exceptions, silent quality regression"],
+    "diff_summary": "rev 99 が正規化のスケーリングを破壊。状態を持たないため前リビジョンへ安全に巻き戻し可能。"
+  },
+  "ground_truth": {
+    "root_cause_category": "deploy_regression",
+    "root_cause_keywords": ["特徴量", "正規化", "rev 99", "CTR急落"],
+    "expected_tool_trajectory": ["read_metrics", "read_logs", "diff_revision", "list_revisions"],
+    "recommended_remediation_type": "rollback",
+    "is_reversible": true,
+    "auto_remediable": true
+  },
+  "tags": ["deploy", "rollback", "hard", "silent-regression", "search-eval-tie-in"]
+}

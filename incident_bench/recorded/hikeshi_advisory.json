@@ -1,0 +1,1851 @@
+{
+  "meta": {
+    "agent": "hikeshi",
+    "schema": "incident-bench/v0",
+    "rag": "on",
+    "note": "advisory RAG + KB10 + evidence/remediation_plan (D) @main"
+  },
+  "outputs": [
+    {
+      "case_id": "inc_001",
+      "root_cause_text": "リビジョン checkout-api-00042 へのデプロイにより、order_items テーブルに対する N+1クエリ が発生し、p95レイテンシが 1850ms に急騰した。",
+      "root_cause_category": "deploy_regression",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_trace",
+        "check_dependency_status",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "rollback",
+      "confidence": 1.0,
+      "requires_hitl": false,
+      "cost_yen": 7.181,
+      "latency_ms": 33415,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。checkout-apiのp95レイテンシが約9倍に急騰しており、デプロイ直後から継続してユーザー体験に深刻な影響を与えています。\n\n根本原因：デプロイされたコードによるN+1クエリの発生。\n安全な対処：直前の正常なバージョンへのロールバック。",
+        "investigation": "調査ツールを用いて収集した事実、根本原因、および安全な対処法は以下の通りです。\n\n### 収集した事実\n* **直近のメトリクス (`read_metrics`)**:\n  * `checkout-api` のp95レイテンシが、デプロイ前の約212ms〜218msから、デプロイ後に**1850ms〜1920ms**へと約9倍に急騰しています。\n  * エラー率は1.8%（0.018）、QPSは124です。\n* **ログ情報 (`read_logs`, `check_dependency_status`)**:\n  * `DB slow query 1.62s: SELECT * FROM order_items WHERE order_id = ?` というスロークエリが記録されています。\n  * `per-item query repeated N times` という、アイテムごとのクエリが繰り返し実行されている（N+1クエリ）ことを示すログが出力されています。\n* **デプロイ・リビジョン情報 (`list_revisions`, `read_recent_deploy`)**:\n  * サービス名: `checkout-api`\n  * 直近のデプロイ: 8分前\n  * 現在のリビジョン: `checkout-api-00042`\n  * 直前の正常なリビジョン: `checkout-api-00041`\n* **コード差分 (`diff_revision`)**:\n  * リビジョン `checkout-api-00042` の変更において、それまでバッチ取得していた処理を **item ごとの個別クエリに変更（N+1クエリを誘発）** していることが確認されました。\n\n### 根本原因\n* **N+1クエリの混入**:\n  * リビジョン `checkout-api-00042` で行われた「バッチ取得から個別クエリへの変更」により、リクエストごとに大量のDBクエリが発行されるN+1クエリ問題が発生しました。これによりDBアクセスがボトルネックとなり、p95レイテンシが急騰しました。\n\n### 安全な対処\n* **ロールバックの実施**:\n  * サービス影響を迅速に解消するため、直前の正常なリビジョンである **`checkout-api-00041` へのロールバック** を最優先で実施します。",
+        "evidence": "調査結果に基づき、以下の通り根拠を提示します。\n\n### 調査結果の根拠\n* **事象の性質**:\n  * `checkout-api` のリビジョン `checkout-api-00042` へのデプロイ直後から、p95レイテンシが約9倍（212ms→1850ms）に急騰しています。\n  * ログより「N+1クエリ」の発生が確認されており、コード差分（`diff_revision`）からもバッチ取得から個別クエリへの変更が特定されています。\n  * 参照: `checkout-deploy-rev2.md`（デプロイ直後のレイテンシ悪化はデプロイ起因のリグレッションの強いシグナルであること）\n* **対処の判断基準**:\n  * 今回の変更は「読み取り処理（バッチ取得から個別クエリへの変更）」であり、書込済みデータへの影響（過剰請求やデータ破損など）を伴う不可逆な事案ではありません。\n  * 参照: `code-investigation.md`（読み取り専用の変更は可逆であり、ロールバックで安全に戻せることが多い）、`billing-deploy-irreversible.md`（書込済みデータへの影響がある場合はロールバック不可だが、そうでない場合は可逆と判断される）\n* **過去の類似事例**:\n  * 同様のデプロイ起因のリグレッションにおいて、可逆な事案であれば即時ロールバックにより短時間で回復した事例があります。\n  * 参照: `checkout-deploy-rev2.md`（デプロイ起因かつ可逆と判断し、即時ロールバックでMTTR約4分で回復）"
+      },
+      "evidence": [
+        {
+          "fact": "p95レイテンシが 212ms から 1850ms に急騰し、エラー率 1.8% を記録した。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "DB slow query 1.62s: SELECT * FROM order_items WHERE order_id = ? および per-item query repeated N times のログを検出した。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "リビジョン checkout-api-00042 の変更でバッチ取得から個別クエリへの変更（N+1）が行われたことを確認した。",
+          "source": "diff_revision"
+        }
+      ],
+      "remediation_plan": [
+        "checkout-api のトラフィックを前リビジョン checkout-api-00041 へ 100% 切り替えてロールバックを実行する。",
+        "ロールバック完了後、read_metrics を用いて p95レイテンシが 250ms 以下に低下することを確認する。",
+        "read_logs を用いて order_items に対するスロークエリや N+1クエリのログ出力が停止したことを検証する。"
+      ]
+    },
+    {
+      "case_id": "inc_002",
+      "root_cause_text": "payments-api のデプロイ payments-api-00031 において、環境変数 DB_CONN_TIMEOUT_MS が 5000 から 50 へ誤って変更されたことで、OperationalError: connection timeout after 50ms が多発し接続プールが枯渇したこと。",
+      "root_cause_category": "config_error",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "read_config",
+        "diff_revision",
+        "read_trace",
+        "check_quota",
+        "search_runbook",
+        "search_past_incidents"
+      ],
+      "remediation_type": "config_fix",
+      "confidence": 1.0,
+      "requires_hitl": true,
+      "cost_yen": 5.926,
+      "latency_ms": 28097,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。payments-apiの全リクエストの約20%でDB接続タイムアウトが発生しており、サービス全体で深刻な可用性低下が生じています。",
+        "investigation": "調査ツールを用いて収集した事実、根本原因、および安全な対処法は以下の通りです。\n\n### 1. 収集した事実\n* **対象サービス**: `payments-api`\n* **直近のデプロイ/リビジョン**: `payments-api-00031`（約12分前にデプロイ）\n* **設定変更内容**: 環境変数 `DB_CONN_TIMEOUT_MS` が `5000` から `50` へ変更されている。\n* **発生しているエラーログ**:\n  * `OperationalError: connection timeout after 50ms`\n  * `connection pool exhausted`\n* **メトリクスへの影響**: エラー率が約21%に急増、p95レイテンシは240ms〜260msに達している。\n\n### 2. 根本原因\n直近のデプロイ（`payments-api-00031`）において、データベース接続タイムアウト設定である `DB_CONN_TIMEOUT_MS` が **5000ms（5秒）から50ms（0.05秒）へと極端に短く設定されたこと**が原因です。\nネットワークの揺らぎやDBの負荷状況によって接続確立に50ms以上かかるリクエストがすべてタイムアウトとなり、さらに接続の切断・再試行が多発したことで接続プールが枯渇（`connection pool exhausted`）し、全体の約20%のリクエストでDB接続タイムアウトが発生する深刻な可用性低下を引き起こしました。\n\n### 3. 安全な対処法\n* **設定のロールバック**: \n  環境変数 `DB_CONN_TIMEOUT_MS` の値を、以前の安定稼働していた設定値である **`5000`** に戻して再デプロイ（またはリビジョンのロールバック）を実施します。",
+        "evidence": "KB未接続のため、関連するRunbookや過去のインシデント事例は見つかりませんでした。\n\n調査結果に基づき、以下の事実を報告します。\n\n*   **事実**: `payments-api` において、直近のデプロイ（`payments-api-00031`）により環境変数 `DB_CONN_TIMEOUT_MS` が `5000` から `50` へ変更されました。これに伴い、`OperationalError: connection timeout after 50ms` および `connection pool exhausted` というエラーログが確認され、エラー率が約21%に急増しています。\n*   **根本原因**: データベース接続タイムアウト設定が極端に短縮されたことで、接続確立の失敗と再試行が多発し、接続プールが枯渇したことによる可用性低下です。\n*   **対処法**: 環境変数 `DB_CONN_TIMEOUT_MS` を以前の安定値である `5000` に戻す設定変更（ロールバック）が有効です。"
+      },
+      "evidence": [
+        {
+          "fact": "直近のデプロイ payments-api-00031 により環境変数 DB_CONN_TIMEOUT_MS が 5000 から 50 へ変更された。",
+          "source": "read_recent_deploy"
+        },
+        {
+          "fact": "OperationalError: connection timeout after 50ms および connection pool exhausted のエラーログが確認された。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "エラー率が約21%に急増し、p95レイテンシが240ms〜260msに達している。",
+          "source": "read_metrics"
+        }
+      ],
+      "remediation_plan": [
+        "payments-api の環境変数 DB_CONN_TIMEOUT_MS を元の安定値である 5000 に修正して再デプロイを実施する。",
+        "デプロイ完了後、read_logs を用いて OperationalError や connection pool exhausted が発生していないことを確認する。",
+        "read_metrics を用いて error_rate が 1% 未満に低下し、p95レイテンシが安定していることを3分間監視する。"
+      ]
+    },
+    {
+      "case_id": "inc_003",
+      "root_cause_text": "feed-worker において、リビジョン feed-worker-00018 のデプロイ後に heap growth without bound が発生し、メモリ使用率が 94% に達して OOMKilled による再起動ループを引き起こした。",
+      "root_cause_category": "deploy_regression",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_config",
+        "read_trace",
+        "check_quota",
+        "check_dependency_status",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "rollback",
+      "confidence": 0.95,
+      "requires_hitl": false,
+      "cost_yen": 7.097,
+      "latency_ms": 32709,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度は「高」です。`feed-worker` がメモリリークにより OOMKilled を繰り返しており、サービスが継続的に停止しているため、早急な対応が必要です。",
+        "investigation": "調査ツールを用いて収集した事実、根本原因、および安全な対処法は以下の通りです。\n\n### 1. 収集した事実\n* **対象コンポーネント**: `feed-worker`\n* **発生している現象**: \n  * メモリ使用率が `55% -> 68% -> 81% -> 94%` と右肩上がりに漸増。\n  * 直近30分間で4回の OOMKilled による再起動ループが発生。\n* **直近のデプロイ**: \n  * 95分前にリビジョン `feed-worker-00018` がデプロイされた（前バージョンは `feed-worker-00017`）。\n* **エラーログ**: \n  * `Killed process (OOM)`\n  * `heap growth without bound after rev 18`（リビジョン18以降、ヒープメモリが無制限に増加していることを示すログ）\n\n### 2. 根本原因\n* **原因カテゴリ**: アプリケーションコードのバグ（メモリリーク）\n* **詳細**: 95分前にデプロイされたリビジョン `feed-worker-00018` のコード変更において、ヒープメモリが解放されずに蓄積し続けるメモリリーク（`heap growth without bound`）が発生しており、これが原因でコンテナのメモリ上限に達し、OOMKilled を繰り返しています。\n\n### 3. 安全な対処\n1. **即時復旧（ロールバック）**: \n   * 現在稼働中の `feed-worker-00018` を、安定して動作していた前バージョンの **`feed-worker-00017` にロールバック**します。これにより、サービスの継続的な停止と再起動ループを即座に解消します。\n2. **恒久対策（コード修正）**: \n   * ロールバック完了後、開発環境にて `feed-worker-00017` と `feed-worker-00018` のコード差分を詳細に分析し、ヒープメモリを不適切に保持し続けている箇所（キャッシュの肥大化、クローズ漏れ、グローバル変数への追加など）を特定・修正した上で、再デプロイを行います。",
+        "evidence": "調査結果に基づき、以下の根拠を提示します。\n\n*   **直近デプロイ起因のメモリリークへの対応**:\n    リソース枯渇の症状において、直近のデプロイが原因でメモリリークが発生している場合、その変更が可逆的であればロールバックが推奨されます。\n    参照: `resource-exhaustion.md`\n*   **ロールバックの判断基準**:\n    デプロイ起因の不具合であっても、書込済みデータへの影響など「不可逆」な事案である場合は、盲目的なロールバックではなく、コード修正（code_fix）やデータ補正を優先すべきとされています。今回の事象がメモリリークによる再起動ループである場合、ロールバックによる新規発生の停止が有効な手段となり得ます。\n    参照: `billing-deploy-irreversible.md`\n*   **ロールバックの注意点**:\n    外部依存の障害など、自身のコードに起因しない場合はロールバックが有効ではないため、盲目的なロールバックは MTTR を浪費するアンチパターンとされています。\n    参照: `dependency-failure.md`"
+      },
+      "evidence": [
+        {
+          "fact": "メモリ使用率が 55% から 94% へ漸増し、30分間で4回の再起動が発生した。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに 'Killed process (OOM)' および 'heap growth without bound after rev 18' が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "95分前に新リビジョン feed-worker-00018 がデプロイされ、前リビジョンは feed-worker-00017 である。",
+          "source": "list_revisions"
+        }
+      ],
+      "remediation_plan": [
+        "feed-worker の稼働リビジョンを安定していた前バージョンの feed-worker-00017 へロールバックし、トラフィックを 100% 切り替える。",
+        "ロールバック完了後、read_metrics を用いてメモリ使用率が 60% 以下で安定し、再起動が発生しないことを5分間監視して検証する。",
+        "read_logs を用いて 'heap growth without bound' などのメモリリークを示すエラーログが出力されていないことを確認する。"
+      ]
+    },
+    {
+      "case_id": "inc_004",
+      "root_cause_text": "外部決済ゲートウェイ payment-gw の 503 Service Unavailable 障害による checkout-api の注文失敗率 34% 急増",
+      "root_cause_category": "dependency_failure",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "read_config",
+        "check_dependency_status",
+        "read_trace",
+        "check_quota",
+        "check_cache",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "runbook_mitigation",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 6.718,
+      "latency_ms": 30979,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。決済ゲートウェイの503エラーにより注文失敗率が34%まで急増しており、全ユーザーの決済処理に影響が出ています。",
+        "investigation": "調査ツールを用いて収集した事実と、根本原因および安全な対処法について以下に報告します。\n\n### 1. 収集した事実\n* **エラーの発生状況**: \n  * 注文失敗率が **34%** まで急増しています。\n  * 自社サービス（`checkout-api`）自体のヘルスチェックは正常（`self_health: ok`）です。\n* **エラーログ・トレース**:\n  * 外部の決済ゲートウェイへの呼び出しにおいて、`payment-gw.charge -> 503 Service Unavailable (repeated)` が発生しています。\n  * ログには `upstream payment-gw returned 503` および `our service healthy, dependency down` と記録されており、外部依存先のダウンが直接の原因です。\n* **変更履歴**:\n  * 直近のデプロイや設定変更（`config_change`）は行われていません（直近デプロイは1440分前＝24時間前）。自社システムの変更に起因するものではありません。\n* **リソース・キャッシュ状況**:\n  * クォータ逼迫やキャッシュの不整合などは検出されていません。\n\n---\n\n### 2. 根本原因\n* **外部決済ゲートウェイ（`payment-gw`）のサービス障害（503 Service Unavailable）**\n  * 自社システム側のデプロイや設定ミスではなく、外部の決済プロバイダー側でシステムダウンまたは過負荷が発生していることが根本原因です。\n\n---\n\n### 3. 安全な対処法\n1. **外部プロバイダーへの問い合わせと状況確認**:\n   * 決済ゲートウェイ（`payment-gw`）の公式ステータスページを確認し、障害情報を把握するとともに、プロバイダーのサポート窓口へ問い合わせ・復旧目処の確認を行います。\n2. **サーキットブレイカーの作動 / 縮退運転の実施**:\n   * 外部への無駄なリクエスト集中を防ぎ、自社システムの他機能（カート追加や商品閲覧など）への影響連鎖を防ぐため、決済処理に対してサーキットブレイカーを有効化します。\n3. **ユーザーへの適切なアナウンスとエラーハンドリング**:\n   * ユーザー画面上で「決済システムが一時的に利用できません」といったメンテナンス表示や、分かりやすいエラーメッセージを表示し、ユーザーが何度も再試行して二重決済などのトラブルが起きないように制御します。\n4. **代替決済手段への切り替え（可能な場合）**:\n   * 予備の決済ゲートウェイや他の決済手段（コンビニ決済、銀行振込、別プロバイダーなど）がシステム内に用意されている場合は、一時的にそちらへトラフィックを迂回させる設定変更を検討します。",
+        "evidence": "調査結果に基づき、以下の通り報告します。\n\n### 1. 根拠となる事実と参照\n* **根本原因の特定**: \n  * 自社サービス（`checkout-api`）のヘルスチェックは正常であり、直近のデプロイや設定変更も行われていません。一方で、外部決済ゲートウェイ（`payment-gw`）への呼び出しで `503 Service Unavailable` が継続的に発生しています。\n  * 参照: `Runbook: 外部依存の障害連鎖（dependency failure）`（症状：upstream_status が 5xx、self_health は ok、直近デプロイなし）\n* **対処方針の根拠**:\n  * 外部依存先の障害であるため、自社システムのロールバックは無効であり、MTTRを浪費するアンチパターンとされています。\n  * 外部依存障害に対しては、サーキットブレーカの作動、リトライ抑制、縮退運転（機能フラグによる該当機能の一時停止）が推奨されます。\n  * 参照: `Runbook: 外部依存の障害連鎖（dependency failure）`（推奨対処：ロールバックは無効、Runbook 緩和策としてサーキットブレーカ作動や縮退運転を実施）\n\n### 2. 根本原因カテゴリ\n* **dependency_failure**（外部依存先の障害）\n\n### 3. 安全な対処法\n* 外部プロバイダーの障害状況確認（ステータスページ等）。\n* サーキットブレーカの有効化による障害連鎖の防止。\n* ユーザーへの適切なエラー表示（メンテナンス中等のアナウンス）。\n* 予備の決済手段がある場合のトラフィック迂回検討。"
+      },
+      "evidence": [
+        {
+          "fact": "error_rate 34%・self_health ok",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "payment-gw.charge -> 503 Service Unavailable (repeated)",
+          "source": "read_trace"
+        },
+        {
+          "fact": "checkout-api の直近デプロイは 1440 分前であり変更なし",
+          "source": "read_recent_deploy"
+        }
+      ],
+      "remediation_plan": [
+        "外部決済ゲートウェイ payment-gw の公式ステータスページを確認し、障害状況と復旧目処を把握する。",
+        "checkout-api において決済処理に対するサーキットブレーカーを有効化し、外部への無駄なリクエスト集中と障害連鎖を防止する。",
+        "ユーザー画面上で決済システムの一時的なメンテナンス表示を有効化し、二重決済などのトラブルを防ぐ。",
+        "予備の決済手段へのトラフィック迂回設定を適用し、注文失敗率が 1% 未満に低下するか metrics で検証する。"
+      ]
+    },
+    {
+      "case_id": "inc_005",
+      "root_cause_text": "catalog-api のリビジョン catalog-api-00027 デプロイ後、キャッシュヒット率が 99.7% に異常上昇し、TTL not invalidated により古い価格キャッシュが提供され続けているデータ不整合。",
+      "root_cause_category": "data_cache_issue",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "check_cache",
+        "read_config",
+        "check_dependency_status",
+        "read_trace",
+        "check_quota",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "cache_flush",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 7.762,
+      "latency_ms": 34339,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "キャッシュヒット率が99.7%と異常に高く、価格更新時にキャッシュが適切に無効化されていないことがログから確認されました。全ユーザーに対して古い価格が表示され続けている状態であり、ビジネスへの影響が大きいため、重大度は「高」と判定します。",
+        "investigation": "調査ツールを用いて収集した事実、根本原因、および安全な対処法は以下の通りです。\n\n### 1. 収集した事実\n* **直近のデプロイと変更**: \n  * 20分前に `catalog-api` サービスにて、リビジョン `catalog-api-00027`（ノート: 「価格モデル変更」）がデプロイされました。\n* **メトリクスの異常**:\n  * キャッシュヒット率が **99.7%** と異常に高くなっています。\n  * エラー率は 1%（0.01）と低水準ですが、価格の誤表示というサイレントな不具合が発生しています。\n* **ログの異常**:\n  * `serving cached price for SKU (stale)`（SKUに対して古いキャッシュ価格を提供中）\n  * `TTL not invalidated after price model change`（価格モデル変更後にTTLが無効化されていない）\n  というログが記録されており、価格更新時にキャッシュが適切に破棄・更新されていないことが確認されました。\n\n### 2. 根本原因の仮説\n* **アプリケーションコードまたは設定の不具合（キャッシュ制御の不整合）**\n  * `catalog-api-00027` で行われた「価格モデル変更」のリリースに伴い、キャッシュの無効化（Invalidation）ロジックが正常に機能しなくなった、あるいは新しい価格モデルに対応するTTL（生存期間）の設定やキャッシュキーの設計に不整合が生じ、古いキャッシュが残り続けている状態です。\n\n### 3. 安全な対処法\n1. **ロールバックの実施**:\n   * キャッシュ無効化ロジックを修正するまでの間、サービスを直近の正常なリビジョン（`catalog-api-00027` より前のバージョン）にロールバックします。\n2. **キャッシュの強制クリア（パージ）**:\n   * ロールバック後、またはロールバックと同時に、現在残っている古い価格キャッシュ（RedisやCDN等）を手動でパージ（クリア）し、ユーザーに最新の正しい価格がデータベースから再取得・表示されるようにします。",
+        "evidence": "調査結果に基づき、以下の通り根拠を提示します。\n\n### 1. 根本原因の根拠\n* **デプロイ起因の不具合**: `catalog-api-00027` のデプロイ直後にキャッシュの無効化不全が発生しており、これは「デプロイ起因のリグレッション（deploy_regression）」に該当します。\n  * 参照: `Runbook: デプロイ起因のエラー急騰（デプロイ・リグレッション）`\n* **キャッシュ/データ不整合**: ログに `TTL not invalidated after price model change` とある通り、キャッシュ層でのデータ不整合が発生しています。\n  * 参照: `Runbook: キャッシュ/データ不整合（data / cache issue）`\n\n### 2. 対処に関する根拠\n* **キャッシュのパージ**: キャッシュ/データ不整合が発生している場合、キャッシュのフラッシュ（パージ）が推奨されます。\n  * 参照: `Runbook: キャッシュ/データ不整合（data / cache issue）`\n* **ロールバックの可否**: デプロイ起因の不具合であっても、書込済みデータへの影響（不可逆性）がある場合はロールバックが適切でない場合があります。本件は「価格の誤表示」という状態であり、書込済みデータ（データベース上の価格）が破壊されているか、単にキャッシュが古いだけかによって判断が分かれます。\n  * 参照: `ポストモーテム: 課金処理のデプロイ起因不具合 — ロールバック不可、code_fix＋データ補正で収束`\n  * 参照: `Runbook: デプロイ起因のエラー急騰（デプロイ・リグレッション）`（可逆な場合はロールバックが推奨される）"
+      },
+      "evidence": [
+        {
+          "fact": "キャッシュヒット率が 99.7% に上昇し、エラー率は 0.01 (1%) である",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに 'serving cached price for SKU (stale)' および 'TTL not invalidated after price model change' が記録されている",
+          "source": "read_logs"
+        },
+        {
+          "fact": "20分前に catalog-api サービスでリビジョン catalog-api-00027 がデプロイされている",
+          "source": "read_recent_deploy"
+        }
+      ],
+      "remediation_plan": [
+        "catalog-api サービスに関連する Redis および CDN の価格キャッシュを強制的にパージ（クリア）する。",
+        "キャッシュクリア後、catalog-api の /metrics エンドポイントで cache_hit_rate が正常値（80%以下）に低下し、データベースから最新の価格が取得されていることを確認する。",
+        "ログ監視ツールで 'serving cached price for SKU (stale)' の新規出力が停止したことを3分間監視して検証する。"
+      ]
+    },
+    {
+      "case_id": "inc_006",
+      "root_cause_text": "リビジョン web-bff-00120 のデプロイに伴い、ResponseShaper.format() において discount フィールドの欠落に対するハンドリングが不足していたため NullPointerException が発生し、エラー率が 11% に急増した。",
+      "root_cause_category": "deploy_regression",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_config",
+        "check_dependency_status",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "rollback",
+      "confidence": 1.0,
+      "requires_hitl": false,
+      "cost_yen": 6.962,
+      "latency_ms": 30647,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度は「高」です。デプロイ直後の変更により、特定のレスポンスフィールド欠落に起因する NullPointerException が発生し、全トラフィックの約11%で5xxエラーが継続的に発生しています。",
+        "investigation": "調査の結果、以下の事実が判明しました。\n\n### 1. 収集した事実\n* **対象サービスとリビジョン**:\n  * サービス名: `web-bff`\n  * 現在のリビジョン: `web-bff-00120`（約6分前にデプロイ）\n  * 前回の安定リビジョン: `web-bff-00119`\n* **エラーの症状とメトリクス**:\n  * エラー率が約11%に急増（5xxエラー）。\n  * ログに `NullPointerException at ResponseShaper.format()` および `field 'discount' missing after rev 00120` が多数記録されている。\n* **変更差分 (`diff_revision`)**:\n  * リビジョン `web-bff-00120` にて、レスポンス整形処理（`ResponseShaper.format()`）において `discount` フィールドを必須前提とする変更が行われたが、`null`（または欠落）に対するハンドリングが考慮されていなかった。\n\n---\n\n### 2. 根本原因\n* **原因カテゴリ**: アプリケーションコードのバグ（デプロイによるデグレード / NullPointerException）\n* **詳細**: `web-bff-00120` で行われたレスポンス整形処理の変更において、`discount` フィールドが `null` または欠落しているケースを考慮せずに必須として扱ったため、該当するリクエストの処理時に `ResponseShaper.format()` で `NullPointerException` が発生し、5xxエラーを引き起こしていました。\n\n---\n\n### 3. 安全な対処案\n1. **即時対応（ロールバック）**:\n   * サービス影響を最小限に抑えるため、直ちに前回の安定したリビジョンである **`web-bff-00119` へロールバック** を実施します。\n2. **恒久対策**:\n   * `ResponseShaper.format()` 内で `discount` フィールドが `null` または欠落している場合でも、デフォルト値を設定する、あるいはスキップするなどの安全な null ハンドリング処理を追加します。\n   * `discount` が存在しないパターンのユニットテストを追加し、修正が正常に機能することを確認した上で、再度デプロイを行います。",
+        "evidence": "調査の結果、以下の事実が判明しました。\n\n### 1. 根拠となる過去事例・Runbook\n* **デプロイ起因の障害対応**: 直近のデプロイ（`web-bff-00120`）が原因でエラー率が急騰している場合、それがコードの不具合（リグレッション）であり、かつデータ破損などの不可逆な影響がない場合は、前リビジョンへのロールバックが推奨されます。\n    * 参照: `Runbook: デプロイ起因のエラー急騰（デプロイ・リグレッション）`\n    * 参照: `ポストモーテム: checkout-svc デプロイ起因 5xx（rev 2）`\n* **ロールバックの判断基準**: デプロイ起因の不具合であっても、課金や在庫など既に書き込まれたデータに影響を与える「不可逆」な事案の場合は、ロールバックではなく修正（code_fix）とデータ補正が優先されます。今回の事象はレスポンス整形処理における `NullPointerException` であり、データ破損を伴うものではないため、ロールバックが有効な選択肢となります。\n    * 参照: `ポストモーテム: 課金処理のデプロイ起因不具合 — ロールバック不可、code_fix＋データ補正で収束`\n\n### 2. 根本原因の分類\n* **原因カテゴリ**: デプロイによるデグレード（deploy_regression）\n* **詳細**: `web-bff-00120` でのレスポンス整形処理変更において、`discount` フィールドの欠落に対するハンドリングが不足していたことによる `NullPointerException` の発生。\n\n### 3. 対処案の根拠\n* **即時対応**: サービス影響を最小化するため、前回の安定リビジョン（`web-bff-00119`）へのロールバックが推奨されます。\n    * 参照: `Runbook: デプロイ起因のエラー急騰（デプロイ・リグレッション）`\n* **恒久対策**: `ResponseShaper.format()` における `null` ハンドリングの追加および、該当ケースを網羅したユニットテストの追加が必要です。"
+      },
+      "evidence": [
+        {
+          "fact": "エラー率が 11% に急増している。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに NullPointerException at ResponseShaper.format() および field 'discount' missing after rev 00120 が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "リビジョン web-bff-00120 の差分で、レスポンス整形処理において discount を必須前提に変更し null 未対応であることが確認された。",
+          "source": "diff_revision"
+        }
+      ],
+      "remediation_plan": [
+        "web-bff のデプロイを前回の安定リビジョンである web-bff-00119 へロールバックし、トラフィックを 100% 切り替える。",
+        "ロールバック完了後、read_metrics を用いて web-bff の error_rate が 1% 未満に低下し、5xx エラーが収束したことを確認する。"
+      ]
+    },
+    {
+      "case_id": "inc_007",
+      "root_cause_text": "キャンペーン開始に伴うQPS 2300への急増により、search-apiのCPU使用率が96%に達してCPU throttlingが発生し、p95レイテンシが2400msに悪化したことによるリソース枯渇。",
+      "root_cause_category": "resource_exhaustion",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_config",
+        "check_quota",
+        "check_cache",
+        "read_trace",
+        "check_dependency_status",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "scale",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 7.169,
+      "latency_ms": 31416,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高（CPU飽和によるスロットリングでp95レイテンシが約7.5倍に悪化しており、サービス全体に深刻な影響が出ています）。\n要約：キャンペーン流入による急激なQPS増加が原因であり、エラーは発生していないものの、リソース不足によりリクエスト処理が滞留している状態です。",
+        "investigation": "調査ツールを用いて収集した事実、根本原因、および安全な対処法を以下に報告します。\n\n### 1. 収集した事実\n* **メトリクスとログの状況**:\n  * **QPSの急増**: `400` → `900` → `1,700` → `2,300` と、平常時の約5.7倍に急増しています。\n  * **CPU飽和とスロットリング**: CPU使用率が `62%` → `78%` → `91%` → `96%` と限界に達しており、ログに `CPU throttling` および `request queue depth rising`（リクエストキューの滞留）が記録されています。\n  * **レイテンシの悪化**: p95レイテンシが `320ms` から `2,400ms`（約7.5倍）へと著しく悪化しています。\n  * **エラーの有無**: ログには `no errors, just slow` とあり、アプリケーションエラーや例外は発生しておらず、純粋にリソース不足による処理遅延が発生しています。\n* **デプロイ・設定変更の影響**:\n  * 35分前にリビジョン `search-api-00088` がデプロイされていますが、内容は「文言修正のみ・ロジック変更なし」であり、今回のCPU飽和とは無関係です。\n* **外部要因**:\n  * `check_quota` の結果より、マーケティングのキャンペーン開始時刻と流入急増（QPS 5.7倍）のタイミングが完全に一致していることが確認されました。\n\n---\n\n### 2. 根本原因\n* **カテゴリ**: **急激なトラフィック増加（キャンペーン流入）に伴うCPUリソース不足（スケール不足）**\n* **詳細**: キャンペーン開始に伴う急激なアクセス増加（QPS 5.7倍）に対し、`search-api` のCPUリソースが不足し、CPUスロットリングが発生したことでリクエストがキューに滞留し、レイテンシが大幅に悪化しました。\n\n---\n\n### 3. 安全な対処法\n* **短期的・即時対応（スケールアウト/スケールアップ）**:\n  1. **水平スケーリング（推奨）**: `search-api` のレプリカ数（Pod数）を手動で増やし、リクエストを分散させます。\n  2. **垂直スケーリング**: レプリカの追加が難しい、または即時反映させたい場合は、コンテナのCPU制限（CPU Limits/Requests）を引き上げます。\n* **中長期的対策**:\n  * キャンペーンなどのイベントに備え、事前に手動でスケールアウトしておく運用の徹底。\n  * CPU使用率やQPSの急増をトリガーとする水平オートスケーラー（HPA）の閾値および最大レプリカ数の見直し。",
+        "evidence": "調査結果に基づき、関連する Runbook および過去事例の要点を報告します。\n\n### 1. 根拠となる情報\n* **リソース飽和時の対応方針**:\n  * CPU飽和やQPS増大によるレイテンシ悪化は「リソース枯渇（resource_exhaustion）」に該当します。\n  * 推奨される対処として、レプリカ数やインスタンス数を増やす「スケールアウト」が挙げられています。\n  * 参照: `Runbook: リソース枯渇・飽和（resource exhaustion）` (source: `resource-exhaustion.md`)\n\n* **デプロイと原因の切り分け**:\n  * 直近のデプロイが原因ではない場合、ロールバックは無効である可能性が高く、リソース追加やフェイルオーバー等の緩和策が適切であるとされています。\n  * 参照: `過去事例: 外部決済 API の 5xx — ロールバック無効、フェイルオーバーで回復` (source: `payment-dep-failover.md`)\n\n### 2. 補足\n* 検索したポストモーテム（事後分析）において、今回の事象に直接合致する過去の事例は確認されませんでした。\n* 参照: `KB未接続` (source: `search_postmortem`)"
+      },
+      "evidence": [
+        {
+          "fact": "QPSが400から2300に急増し、CPU使用率が96%に達してCPU throttlingおよびrequest queue depth risingが記録された。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "p95レイテンシが320msから2400msへ著しく悪化した。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "マーケティングのキャンペーン開始時刻と流入急増（QPS 5.7倍）のタイミングが完全に一致している。",
+          "source": "check_quota"
+        },
+        {
+          "fact": "35分前にデプロイされたリビジョン search-api-00088 は文言修正のみでロジック変更はない。",
+          "source": "read_recent_deploy"
+        }
+      ],
+      "remediation_plan": [
+        "search-api のレプリカ数を引き上げて水平スケールアウトを実行し、コンテナの処理能力を増強する。",
+        "read_metrics を用いて、CPU使用率が安全圏内（80%未満）に低下したことを確認する。",
+        "read_metrics および read_logs を用いて、p95レイテンシが320ms付近に回復し、CPU throttling が解消されたことを検証する。"
+      ]
+    },
+    {
+      "case_id": "inc_008",
+      "root_cause_text": "外部認証プロバイダ(IdP)のレイテンシが最大5000msに急増したことで、orders-api(リビジョンorders-api-00054)のidp.verify_token処理において5秒のタイムアウトが多発し、スレッド枯渇を引き起こしてエラー率が16%に上昇した。",
+      "root_cause_category": "dependency_failure",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_trace",
+        "check_dependency_status",
+        "read_config",
+        "check_quota",
+        "check_cache",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "runbook_mitigation",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 8.56,
+      "latency_ms": 38022,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。外部認証プロバイダのレイテンシが最大5秒まで急増しており、それに伴い `orders-api` のスレッドが枯渇し、エラー率が16%まで上昇しています。",
+        "investigation": "調査ツールから収集した事実と、根本原因および対処案は以下の通りです。\n\n### 1. 収集した事実\n* **エラーとメトリクス**:\n  * `orders-api` のエラー率が **16%** に上昇。\n  * 外部認証プロバイダ（IdP）のレイテンシが最大 **5,000ms（5秒）** まで急増（`upstream_idp_latency_ms: [120, 800, 2600, 5000]`）。\n* **ログとトレース**:\n  * ログに `idp token verify timeout` および `our latency normal until idp slowdown` が記録されている。\n  * 分散トレースにおいて、`idp.verify_token` スパンで **5秒のタイムアウト（`5s timeout (repeated)`）** が繰り返し発生している。\n* **直近のデプロイ・設定変更**:\n  * 18分前にリビジョン `orders-api-00054` がデプロイされているが、ノートには「依存先には触れていない」とあり、コード差分や設定変更が直接の引き金ではない。外部IdP側の突発的な遅延が主因。\n\n---\n\n### 2. 根本原因\n外部認証プロバイダ（IdP）の応答性能が著しく悪化した際、`orders-api` 側のトークン検証処理におけるクライアントタイムアウト値が **5秒** と長く設定されている（あるいはデフォルト値のままになっている）ため、リクエストスレッドが長時間占有され、スレッドプールが枯渇（Thread Starvation）したことによる連鎖的なタイムアウト。\n\n---\n\n### 3. 安全な対処案\n* **短期的・即効性のある対処**:\n  1. **タイムアウト値の短縮**: `orders-api` から外部IdPへのHTTPクライアントのタイムアウト設定を、5秒から許容可能な短い値（例: 500ms〜1s）に引き下げ、スレッドを早期に解放する。\n  2. **サーキットブレイカーの導入**: IdPへの接続にサーキットブレイカーを適用し、タイムアウトが多発した場合は即座にフォールバック（エラーを即時返却、またはキャッシュされた検証結果の利用）させることで、スレッド枯渇を防ぐ。\n  3. **トークン検証結果のキャッシュ**: 既に検証済みのトークン情報をインメモリやRedis等にキャッシュし、外部IdPへの問い合わせ頻度自体を削減する。\n* **中長期的対処**:\n  * **非同期/ローカル検証への移行**: 外部APIを都度呼び出すのではなく、IdPの公開鍵（JWKS）をローカルにキャッシュして署名検証を行う方式（非対称鍵によるローカル検証）へ移行し、認証時の外部依存を排除する。\n  * **バルクヘッド（隔壁）パターンの適用**: 認証処理用のスレッドプールを他のAPI処理（注文処理など）から分離し、認証遅延がシステム全体の停止を招かないように隔離する。",
+        "evidence": "調査結果に基づき、以下の通り根拠を述べます。\n\n### 根拠\n* **外部依存障害への対応**: 外部APIの障害（upstream_status 5xx 等）が発生した場合、自身のコードに問題がない限りロールバックは無効であり、サーキットブレーカーの作動やフェイルオーバー等の緩和策が有効であるとされています。\n  * 参照: `過去事例: 外部決済 API の 5xx — ロールバック無効、フェイルオーバーで回復`\n* **スレッド枯渇とタイムアウト**: 外部依存のレイテンシ悪化によりスレッドが枯渇する事象は、リソースの飽和（resource_exhaustion）の一種として扱われます。設定値の誤りが原因である場合は設定修正（config_fix）が推奨されます。\n  * 参照: `Runbook: リソース枯渇・飽和（resource exhaustion）`\n* **デプロイとの相関**: 直近のデプロイが原因ではない場合、コードのロールバックでは解決しない可能性が高く、外部要因の切り分けと緩和策の適用が優先されます。\n  * 参照: `Runbook: 設定・環境変数の誤り（config error）`、`過去事例: 外部決済 API の 5xx — ロールバック無効、フェイルオーバーで回復`"
+      },
+      "evidence": [
+        {
+          "fact": "エラー率が16%に上昇し、外部IdPのレイテンシが最大5000msに達している",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "分散トレースにおいて idp.verify_token スパンで 5s timeout (repeated) が記録されている",
+          "source": "read_trace"
+        },
+        {
+          "fact": "直近デプロイ orders-api-00054 のノートに「依存先には触れていない」とあり、コード変更が原因ではない",
+          "source": "read_recent_deploy"
+        }
+      ],
+      "remediation_plan": [
+        "orders-api から外部IdPへの接続タイムアウト設定を5秒から1秒に短縮し、リクエストスレッドの早期解放を促す。",
+        "外部IdPへの接続経路にサーキットブレーカーを導入し、タイムアウト多発時に即座にフォールバックエラーを返却するよう設定する。",
+        "設定適用後、read_metrics を用いて orders-api の error_rate が 1% 未満に低下し、スレッド枯渇が解消されたことを3分間確認する。"
+      ]
+    },
+    {
+      "case_id": "inc_009",
+      "root_cause_text": "inventory-api-00076 における冪等キー判定ロジックの不具合により、リトライ時に在庫の二重減算が発生し、37件のSKUでマイナス在庫のデータ不整合が生じた。",
+      "root_cause_category": "deploy_regression",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_config",
+        "check_cache",
+        "read_trace",
+        "check_dependency_status",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "code_fix",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 8.86,
+      "latency_ms": 40245,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。在庫減算処理の冪等性欠如により37件のSKUでマイナス在庫が発生しており、データ整合性が損なわれているため緊急の対応が必要です。",
+        "investigation": "調査によって判明した事実、根本原因、および安全な対処手順を以下に報告します。\n\n### 1. 収集した事実\n* **対象サービス**: `inventory-api`\n* **直近のデプロイ**: リビジョン `inventory-api-00076`（約50分前にデプロイ、変更内容: 「減算処理のリファクタ」）\n* **影響メトリクス**:\n  * マイナス在庫が発生しているSKU数: **37件** (`negative_stock_skus: 37`)\n  * エラー率: **0.004**\n* **ログおよび差分分析**:\n  * ログに `stock decrement applied twice for order` および `idempotency key not honored after rev 76` が記録されています。\n  * リビジョン間の差分（`diff_revision`）より、`rev 76` において**冪等キー（Idempotency Key）の判定ロジックに誤り**があり、クライアントからのリトライ時に在庫の二重減算処理が実行されてしまったことが確認されました。\n\n---\n\n### 2. 根本原因\n* **カテゴリ**: アプリケーションコードのバグ（冪等性制御の不具合）\n* **詳細**: `inventory-api-00076` で実施された「減算処理のリファクタ」において、冪等キーの検証ロジックが正しく機能しなくなりました。その結果、同一の注文に対するリトライリクエストを新規リクエストとして誤認し、在庫の二重減算が実行され、一部のSKUで在庫がマイナスになるデータ不整合が発生しました。\n\n---\n\n### 3. 安全な対処手順\n本インシデントは、アプリケーションのロールバックだけでは既に発生したデータベース上のデータ不整合（マイナス在庫）を解消できないため、以下の2段階の対処が必要です。\n\n1. **一次対応：さらなる被害拡大の防止（ロールバック）**\n   * 二重減算の新規発生を止めるため、`inventory-api` を正常に動作していた前バージョン `inventory-api-00075` に直ちにロールバックします。\n2. **二次対応：データ整合性の修復（データパッチの適用）**\n   * 影響を受けた37件のSKUおよび関連する注文履歴を特定します。\n   * 二重に減算された在庫分を補正（プラスに書き戻し）するデータパッチ（SQLスクリプト等）を作成・検証した上で、データベースに対して実行し、在庫数を正しい状態に復旧します。\n3. **恒久対策：ロジック修正とテスト強化**\n   * 冪等キー判定ロジックのバグを修正します。\n   * リトライ発生時にも二重減算が起きないことを保証する統合テスト（冪等性検証テスト）を追加し、検証後に再度デプロイを行います。",
+        "evidence": "調査結果に基づき、以下の通り根拠を報告します。\n\n### 1. 調査結果の根拠\n* **不可逆なデータ不整合の判定**:\n  今回の事象は「在庫減算処理」という書込経路における不具合であり、既にデータベースへ書き込まれたデータ（マイナス在庫）は、アプリケーションのロールバックを行っても自動的には修復されません。これは「書込済みデータに影響がある場合は不可逆であり、ロールバックだけでは直らない」という原則に基づきます。\n  参照: `code-investigation.md`（Runbook: コード起因の調査）\n* **対応方針の妥当性**:\n  過去の類似事例においても、書込済みデータに影響を与えるデプロイ起因の不具合（過剰請求等）が発生した際、ロールバックのみでは被害データが残存するため、ロールバックによる新規発生の停止と、データパッチによる事後補正を組み合わせる手法が推奨されています。\n  参照: `billing-deploy-irreversible.md`（ポストモーテム: 課金処理のデプロイ起因不具合）\n* **根本原因の特定**:\n  `inventory-api-00076` における「減算処理のリファクタ」が原因であり、冪等キーの検証ロジックが正しく機能していないことがログおよび差分分析から確認されています。これは「書込経路の変更」における不具合の典型例です。\n  参照: `code-investigation.md`（Runbook: コード起因の調査）\n\n### 2. 結論\n本件は、アプリケーションのロールバック（新規被害の停止）と、データパッチによる不整合データの修復（事後補正）の2段階で対応する必要があります。"
+      },
+      "evidence": [
+        {
+          "fact": "negative_stock_skus が 37 件、error_rate が 0.004 であることを確認。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに 'stock decrement applied twice for order' および 'idempotency key not honored after rev 76' が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "リビジョン間の差分より、rev 76 が冪等キー判定を誤り、リトライ時に二重減算が発生していることを確認。",
+          "source": "diff_revision"
+        },
+        {
+          "fact": "書込済みデータに影響がある場合は不可逆であり、ロールバックだけでは直らないため、code_fix とデータ補正が必要。",
+          "source": "参照: code-investigation.md"
+        }
+      ],
+      "remediation_plan": [
+        "新規の二重減算を防ぐため、inventory-api を前リビジョン inventory-api-00075 へロールバックし、新規エラーの発生を停止する。",
+        "データベース上のマイナス在庫が発生している37件のSKUを特定し、二重減算された在庫を補正するデータパッチを適用して、在庫数を正しい状態に復旧する。",
+        "inventory-api-00076 の冪等キー判定ロジックのバグを修正した新リビジョンを作成し、リトライ時の二重減算が起きないことをテストで検証した上で再デプロイする。"
+      ]
+    },
+    {
+      "case_id": "inc_010",
+      "root_cause_text": "gatewayのHPA設定においてmaxReplicasが1に誤設定されたため、スケールアウトがブロックされCPU使用率が97%に達したこと",
+      "root_cause_category": "config_error",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_config",
+        "check_quota",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "config_fix",
+      "confidence": 1.0,
+      "requires_hitl": true,
+      "cost_yen": 5.808,
+      "latency_ms": 28861,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。gatewayのHPA設定ミスによりレプリカ数が1に固定され、負荷増大に伴いCPU使用率が97%に達し、エラー率が上昇してサービス提供に支障をきたしています。",
+        "investigation": "調査ツールを用いて収集した事実、根本原因、および安全な対処法は以下の通りです。\n\n### 1. 収集した事実\n* **エラーログ (`read_logs`)**:\n  * `scaling blocked: at max replicas (1)`（最大レプリカ数1に達したためスケールアウトがブロックされている）\n  * `config drift detected in hpa manifest`（HPAマニフェストで設定の乖離を検出）\n* **メトリクス (`read_metrics` / `check_quota`)**:\n  * **レプリカ数**: `1`\n  * **CPU使用率**: `[70%, 88%, 97%]` と急激に上昇し、過負荷状態に陥っている\n  * **エラー率**: `0.09` (9%) に上昇\n* **直近の変更履歴 (`list_revisions` / `read_recent_deploy` / `read_config`)**:\n  * **適用時期**: 40分前\n  * **変更内容**: 設定変更（`type: config`）により、HPAの最大レプリカ数が **`maxReplicas 10 -> 1`** に誤って変更・適用されていた。\n\n---\n\n### 2. 根本原因\n* **カテゴリ**: 設定ミス（HPA設定の誤適用）\n* **詳細**: 40分前に適用された設定変更において、gatewayのHPA（Horizontal Pod Autoscaler）の `maxReplicas` が誤って `1` に制限されました。これにより、負荷増大時にもスケールアウト（レプリカ数の増加）が行われず、単一のレプリカに負荷が集中してCPU使用率が97%に達し、リクエストを処理しきれずに5xxエラー（エラー率9%）が発生しました。\n\n---\n\n### 3. 安全な対処法\n1. **HPA設定の修正（ロールバックまたは再設定）**:\n   * 誤って `1` に設定された `maxReplicas` を、元の正常な値である `10`（または適切な推奨値）に修正します。\n2. **設定の適用**:\n   * 修正したマニフェストをデプロイ、または直前の正常なリビジョンにロールバックします。\n3. **状況の監視**:\n   * 設定適用後、HPAによってレプリカ数が自動的に増え（スケールアウト）、CPU使用率が安全な水準まで低下することを確認します。\n   * エラー率（5xxエラー）が 0% に収束することを確認します。",
+        "evidence": "調査した結果、本件は設定変更によるHPAの `maxReplicas` 誤設定が原因であり、以下の根拠に基づき対処が推奨されます。\n\n### 根拠\n* **設定変更との相関**: 直近の変更履歴（40分前）において `maxReplicas 10 -> 1` への変更が記録されており、エラーログでも `scaling blocked: at max replicas (1)` と出力されていることから、設定誤りが直接的な原因です。\n* **対処方針**: 設定・環境変数の誤り（config error）については、コードのロールバックではなく、誤った設定値を正しい値へ修正する「設定修正（config_fix）」が推奨されます。\n    * 参照: `Runbook: 設定・環境変数の誤り（config error）`\n* **ロールバックの適用範囲**: デプロイ起因のコード不具合（deploy_regression）についてはロールバックが推奨されますが、設定誤りや容量不足にはロールバックが効かない場合があるため、設定値の直接的な修正が適切です。\n    * 参照: `Runbook: デプロイ起因のエラー急騰（デプロイ・リグレッション）`\n\n### 調査結果のまとめ\n* **根本原因**: 設定ミス（HPAの `maxReplicas` が 1 に制限されたことによるスケールアウト不可）。\n* **安全な対処法**: 誤った `maxReplicas` 設定を元の正常な値（10）へ修正し、設定を再適用すること。"
+      },
+      "evidence": [
+        {
+          "fact": "エラーログに scaling blocked: at max replicas (1) および config drift detected in hpa manifest が記録されている",
+          "source": "read_logs"
+        },
+        {
+          "fact": "レプリカ数が1に固定され、CPU使用率が97%に達し、エラー率が0.09に上昇している",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "40分前に HPA maxReplicas 10 -> 1 を誤適用 する設定変更が記録されている",
+          "source": "read_recent_deploy"
+        }
+      ],
+      "remediation_plan": [
+        "gatewayのHPAマニフェストにおけるmaxReplicasの値を1から元の正常値である10へ修正する。",
+        "修正したHPA設定を対象環境へ適用し、マニフェストのデプロイを完了させる。",
+        "適用後、read_metricsを用いてレプリカ数が自動的にスケールアウトし、CPU使用率が安全な水準まで低下することを確認する。",
+        "read_logsおよびread_metricsでエラー率が0%に収束し、scaling blockedログが出力されなくなったことを検証する。"
+      ]
+    },
+    {
+      "case_id": "inc_011",
+      "root_cause_text": "リビジョン profile-api-00045 のデプロイ後、キャッシュキーのバージョン管理不足により、古いスキーマ構造のデータが cache_hit_rate 98% で配信され続け、ログに serving cached profile without new field が記録されるキャッシュ毒化が発生している。",
+      "root_cause_category": "data_cache_issue",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "check_cache",
+        "read_config",
+        "read_trace",
+        "check_dependency_status",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "cache_flush",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 7.008,
+      "latency_ms": 31265,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。キャッシュヒット率が98%と非常に高く、スキーマ変更に対応していない古いデータが広範囲に配信され続けているため、全ユーザーのプロフィール表示に影響が出ています。",
+        "investigation": "調査ツールから収集した事実、根本原因、および安全な対処法は以下の通りです。\n\n### 1. 収集した事実\n* **直近のデプロイと変更内容**: \n  * 30分前にリビジョン `profile-api-00045` がデプロイされました。\n  * 変更内容は「プロフィールスキーマに項目追加」です。\n* **メトリクス**:\n  * キャッシュヒット率が **98%** と極めて高い状態です。\n  * エラー率は **0.6% (0.006)** と低めですが、これはエラーにならずに古い（不完全な）データが正常応答として配信され続けているためです。\n* **ログの警告**:\n  * `serving cached profile without new field`（新しいフィールドを持たないキャッシュされたプロフィールを配信中）\n  * `cache key not versioned by schema`（キャッシュキーがスキーマバージョンで管理されていない）\n\n---\n\n### 2. 根本原因\n* **カテゴリ**: **キャッシュの不整合 / キャッシュキーのバージョン管理不足（キャッシュ毒化）**\n* **詳細**: \n  プロフィールスキーマに新しい項目を追加したものの、キャッシュキーにスキーマのバージョン情報（例: `v1`, `v2` など）が含まれていません。そのため、デプロイ後も古いスキーマ構造のキャッシュデータが 98% の高確率で配信され続け、フロントエンド側で新フィールドの欠落による表示崩れが発生しています。\n\n---\n\n### 3. 安全な対処法\n1. **即時対応（ワークアラウンド）**:\n   * キャッシュサーバー（Redis/Memcached等）から、古いプロフィールデータのキャッシュを**パージ（一括削除または該当キーのクリア）**します。これにより、リクエストがDBへフォールバックされ、新しいスキーマ構造のデータでキャッシュが再生成されます。\n2. **恒久対策**:\n   * キャッシュキーの命名規則にスキーマのバージョンを含めるようにコードを修正します（例: `profile:{schema_version}:{user_id}`）。\n   * 今後スキーマを変更する際は、バージョンをインクリメントしてデプロイすることで、古いキャッシュが自動的に参照されなくなる仕組みを導入します。",
+        "evidence": "調査結果に基づき、以下の通り根拠を提示します。\n\n### 根拠となる事実と知見\n* **症状と原因**:\n    * プロフィールスキーマ変更後にキャッシュキーのバージョン管理が不足したことで、古いスキーマ構造のデータが配信され続けています（ログ: `serving cached profile without new field`, `cache key not versioned by schema`）。\n    * 参照: `investigate` ツールによる調査結果\n* **対処方針**:\n    * キャッシュ/データ不整合（data / cache issue）が発生している場合、ロールバックやスケールでは解決せず、該当キャッシュのパージ（フラッシュ）による再生成が推奨されます。\n    * 参照: `Runbook: キャッシュ/データ不整合（data / cache issue）`\n    * デプロイ起因の不具合であっても、書込済みデータへの影響やキャッシュ毒化のような不可逆的な状態（巻き戻しても古いデータが残る）の場合、単なるロールバックではなく、修正デプロイやデータ補正、キャッシュのクリアといった適切な手順が必要です。\n    * 参照: `ポストモーテム: 課金処理のデプロイ起因不具合 — ロールバック不可、code_fix＋データ補正で収束`"
+      },
+      "evidence": [
+        {
+          "fact": "cache_hit_rate が 98% と極めて高く、エラー率は 0.6% である。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに serving cached profile without new field および cache key not versioned by schema が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "30分前にリビジョン profile-api-00045 (プロフィールスキーマに項目追加) がデプロイされている。",
+          "source": "read_recent_deploy"
+        }
+      ],
+      "remediation_plan": [
+        "キャッシュサーバーから古いプロフィールデータのキャッシュキーをパージ（一括削除）し、DBからの再生成を促します。",
+        "APIサーバーのログを監視し、serving cached profile without new field の警告ログが出力されなくなったことを検証します。",
+        "メトリクスで cache_hit_rate が一時的に低下した後に再上昇し、エラー率が 0% に収束することを確認します。"
+      ]
+    },
+    {
+      "case_id": "inc_012",
+      "root_cause_text": "notif-svc において、10分前の設定変更により環境変数 SMTP_HOST が 'smtp.intenal' に誤設定され、DNS名前解決に失敗して getaddrinfo ENOTFOUND エラーが発生したこと。",
+      "root_cause_category": "config_error",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "read_config",
+        "diff_revision",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "config_fix",
+      "confidence": 1.0,
+      "requires_hitl": true,
+      "cost_yen": 5.263,
+      "latency_ms": 30528,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度は「緊急」であり、`notif-svc` のメール送信機能が全停止しているため、ユーザーへの通知が一切行われない状態です。SMTPホスト名の解決エラー（`smtp.intenal`）が確認されており、環境変数の設定ミスが直接的な原因です。",
+        "investigation": "調査ツールを用いて収集した事実に基づき、インシデントの根本原因と対処法を報告します。\n\n### 1. 収集した事実\n* **エラーの発生状況 (`read_metrics`, `read_logs`)**:\n  * `notif-svc` のメール送信成功率が **0%**（エラー率 100%）に低下。\n  * ログに `getaddrinfo ENOTFOUND smtp.intenal` および `all outbound mail failing` が記録されており、SMTPホストの名前解決に失敗している。\n* **直近の変更履歴 (`list_revisions`, `read_recent_deploy`, `read_config`)**:\n  * 10分前に設定変更（`config`）のデプロイが実施されている。\n  * 変更内容：環境変数 **`SMTP_HOST`** の値を `'smtp.internal'` から **`'smtp.intenal'`**（`r` が抜けているタイポ）に変更。\n\n---\n\n### 2. 根本原因\n* **カテゴリ**: 設定ミス（環境変数のタイポ）\n* **詳細**: 10分前の設定変更デプロイにおいて、SMTPサーバーのホスト名 `SMTP_HOST` に `'smtp.intenal'` というタイポが含まれた状態で適用されたため、DNS名前解決ができず、すべてのメール送信処理が失敗（`ENOTFOUND`）しました。\n\n---\n\n### 3. 安全な対処法\n* **即時対応（ロールバック）**:\n  * 環境変数 `SMTP_HOST` の値を、正しいホスト名である **`smtp.internal`** に修正し、設定を再デプロイ（または直前の正常なリビジョンへロールバック）します。\n* **再発防止策**:\n  * 環境変数の変更時に、ホスト名のフォーマットや疎通確認を自動で行うバリデーション（CI/CDパイプラインでのチェック、またはアプリケーション起動時の接続確認）を導入する。",
+        "evidence": "調査結果に基づき、以下の通り報告します。\n\n### 1. 根拠となる事実\n*   **設定誤りの特定**: `notif-svc` において、10分前の設定変更により環境変数 `SMTP_HOST` が `'smtp.internal'` から `'smtp.intenal'`（タイポ）に変更されたことが確認されました。\n*   **エラーの発生**: 上記の変更に伴い、ログに `getaddrinfo ENOTFOUND smtp.intenal` が記録され、メール送信成功率が 0% となっています。\n*   **Runbook の指針**: 設定・環境変数の誤り（config_error）が原因である場合、コードのロールバックではなく、誤った設定値を正しい値へ修正する「設定修正（config_fix）」が推奨されます。\n    *   参照: `Runbook: 設定・環境変数の誤り（config error）`\n\n### 2. 根本原因\n*   **カテゴリ**: 設定ミス（環境変数のタイポ）\n*   **詳細**: SMTPサーバーのホスト名設定におけるタイポにより、DNS名前解決が失敗し、メール送信機能が全停止しています。\n\n### 3. 対処法\n*   **即時対応**: 環境変数 `SMTP_HOST` を正しい値（`smtp.internal`）に修正し、設定を再適用してください。\n*   **再発防止**: 設定変更時のバリデーション強化（CI/CDパイプラインでのチェック等）を検討してください。\n\n※過去の類似インシデントおよびポストモーテムについては、該当する記録が見つかりませんでした。\n参照: `search_past_incidents`, `search_postmortem`"
+      },
+      "evidence": [
+        {
+          "fact": "notif-svc のメール送信成功率が 0.0%（エラー率 1.0）に低下している。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに getaddrinfo ENOTFOUND smtp.intenal および all outbound mail failing が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "10分前に環境変数 SMTP_HOST を 'smtp.internal' から 'smtp.intenal'(typo) に変更する設定デプロイが実施されている。",
+          "source": "read_recent_deploy"
+        }
+      ],
+      "remediation_plan": [
+        "notif-svc の環境変数 SMTP_HOST の値を正しいホスト名である smtp.internal に修正して再適用する。",
+        "notif-svc のコンテナログを監視し、getaddrinfo ENOTFOUND エラーの出力が停止したことを確認する。",
+        "notif-svc のメトリクスを監視し、send_success_rate が 99% 以上に回復することを確認する。"
+      ]
+    },
+    {
+      "case_id": "inc_013",
+      "root_cause_text": "txn-api において、マネージドDBのメンテナンスに伴う primary failover が発生し、コネクションプール内の古い接続が connection reset や read-only エラーを引き起こしたこと。",
+      "root_cause_category": "dependency_failure",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "read_config",
+        "read_trace",
+        "check_dependency_status",
+        "check_quota",
+        "diff_revision",
+        "check_cache",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "runbook_mitigation",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 9.028,
+      "latency_ms": 39816,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。マネージドDBのフェイルオーバに伴い、txn-apiの書き込みリクエストの最大22%が失敗しており、サービス可用性に直接的な影響が出ています。",
+        "investigation": "### 収集した事実\n\n1. **直近のメトリクスとエラー状況**\n   - `txn-api` の書き込みエラー率（`write_error_rate`）が断続的に急増しており、最大で **22%** に達している。\n   - ログには `primary failover in progress (managed db maintenance window)`（マネージドDBのメンテナンスに伴うプライマリのフェイルオーバが進行中）および `writes intermittently rejected`（書き込みが断続的に拒否されている）が記録されている。\n\n2. **トレースおよび依存関係の状況**\n   - 分散トレース（`read_trace`）において、`span db.write -> connection reset during failover` が検出されており、フェイルオーバ中にDBへの書き込み処理でコネクションリセットが発生している。\n   - アラート情報より、`read-only`（読み取り専用）および `connection reset`（接続リセット）のエラーログが断続的に発生していることが確認されている。\n\n3. **デプロイ・設定変更の履歴**\n   - 直近（600分以内）のデプロイや設定変更（`config_change`）は行われておらず、アプリケーション側の変更がトリガーではなく、**マネージドDBのフェイルオーバというインフラ側のイベント**が契機となっている。\n\n---\n\n### 根本原因の仮説\n\n**「DBフェイルオーバ時におけるアプリケーション（txn-api）のコネクションプール管理およびリトライ制御の不備」**\n\n* **古いコネクションの残存（Connection Reset）**:\n  DBのプライマリが切り替わった際、`txn-api` のコネクションプール内に残っていた旧プライマリへの古い接続が切断され、それを利用して書き込みを試みたリクエストで `connection reset` が発生している。\n* **旧プライマリ（Read-Only降格）への書き込み試行（Read-Only）**:\n  フェイルオーバによって旧プライマリがセカンダリ（読み取り専用）に降格した際、アプリケーションがDNSのキャッシュやコネクションプールの生存期間（`max_lifetime`）の都合で、依然として旧プライマリに接続し続け、書き込みを行おうとしたため `read-only` エラーが発生している。\n* **リトライ・検証ロジックの欠如**:\n  接続取得時の生存確認（`test-on-borrow` 等）や、一時的な接続エラーに対する適切なリトライロジック（指数バックオフを伴う再試行）がアプリケーション側に実装されていない、もしくは設定が不十分であるため、エラーがそのままクライアントに返却され 5xx エラーとなっている。\n\n---\n\n### 安全な対処案\n\n#### 1. 短期的な応急処置\n* **`txn-api` の再起動（ローリング再起動）**:\n  アプリケーションのポッド/プロセスを順次再起動することで、コネクションプールを強制的にクリアし、新プライマリ（ライターインスタンス）への接続を再確立させる。\n\n#### 2. 恒久的な対策\n* **コネクションプール設定の最適化**:\n  * 接続の最大生存期間（`max_lifetime` / `maxIdleTime`）を短く設定し、古い接続がプール内に長期間残らないようにする。\n  * 接続取得時に接続の健全性を確認する設定（例: `test-on-borrow` や `validationQuery`）を有効化する。\n* **再接続・リトライロジックの強化**:\n  * `connection reset` や一時的な `read-only` エラーを検知した際、接続を破棄して新しい接続で自動的に再試行（指数バックオフ付き）するロジックをアプリケーションに組み込む。\n* **接続先エンドポイントの確認**:\n  * アプリケーションが参照しているDBの接続先が、プライマリインスタンスを自動的に追従する「ライターエンドポイント（クラスターエンドポイント）」に正しく設定されているか再確認する。",
+        "evidence": "調査の結果、本件は外部依存（マネージドDB）のフェイルオーバに伴う障害連鎖であると判断されます。根拠は以下の通りです。\n\n*   **外部依存の障害連鎖**: 外部依存（DB）の障害が連鎖しており、アプリケーション側のコード変更が原因ではない場合、盲目的なロールバックは復旧に寄与せず MTTR を浪費するアンチパターンであるとされています。\n    *   参照: `Runbook: 外部依存の障害連鎖（dependency failure）`\n*   **推奨される対処**: 外部依存障害時の対処として、フェイルオーバーの待機、サーキットブレーカの作動、リトライ抑制、または機能フラグによる縮退運転が挙げられています。\n    *   参照: `Runbook: 外部依存の障害連鎖（dependency failure）`\n\nなお、過去の類似インシデントおよびポストモーテムについては、該当する記録は見つかりませんでした。\n*   参照: `search_past_incidents`, `search_postmortem`（検索結果なし）"
+      },
+      "evidence": [
+        {
+          "fact": "write_error_rate が最大 22% に達している。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに 'primary failover in progress (managed db maintenance window)' および 'writes intermittently rejected' が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "トレースに 'span db.write -> connection reset during failover' が検出されている。",
+          "source": "read_trace"
+        }
+      ],
+      "remediation_plan": [
+        "txn-api のポッドを順次ローリング再起動し、コネクションプールを強制クリアして新プライマリへの再接続を確立する。",
+        "再起動後、read_metrics を用いて write_error_rate が 1% 未満に低下し安定していることを5分間監視する。",
+        "恒久対策として、txn-api の DB 接続設定における max_lifetime を短縮し、接続検証ロジックを有効化するコード変更を準備する。"
+      ]
+    },
+    {
+      "case_id": "inc_014",
+      "root_cause_text": "ws-gateway において、アクティブ接続数が 31,000 に達したことでファイルディスクリプタ使用率（open_fds_pct）が 99% に達し、accept() failed: too many open files エラーが発生して新規接続が拒否されたリソース枯渇。",
+      "root_cause_category": "resource_exhaustion",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "check_quota",
+        "read_config",
+        "read_trace",
+        "check_dependency_status",
+        "diff_revision",
+        "check_cache",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "scale",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 8.493,
+      "latency_ms": 37616,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：緊急（Critical）。`ws-gateway` のファイルディスクリプタが上限に達しており、新規接続が完全に拒否されているため、サービス全体が停止状態にあります。",
+        "investigation": "調査ツールを用いて収集した事実、根本原因の判定、および安全な対処法は以下の通りです。\n\n### 1. 収集した事実\n* **エラーログ**:\n  * `accept() failed: too many open files` および `fd limit reached` が発生しており、新規接続が完全に拒否されています。\n* **メトリクス**:\n  * アクティブ接続数（`active_connections`）が `12,000` → `18,000` → `24,000` → `31,000` と連日漸増しています。\n  * これに伴い、ファイルディスクリプタ使用率（`open_fds_pct`）が `70%` → `82%` → `91%` → `99%` と上限に達しています。\n  * 接続数と使用率の推移から、現在のファイルディスクリプタ（FD）の上限値はおおよそ **32,000** 前後に設定されていると推測されます。\n* **変更履歴**:\n  * 直近2日間（2,880分前）はデプロイや設定変更は行われておらず（`deployed_min_ago: 2880`）、純粋なトラフィックの自然増、または接続の滞留によって徐々にFDが逼迫した状態です。\n\n---\n\n### 2. 根本原因カテゴリ\n* **リソース制限の超過（ファイルディスクリプタの枯渇）**\n  * `ws-gateway` のプロセスまたはコンテナに割り当てられている最大オープンファイル数（`ulimit -n`）の設定値が、増加するアクティブ接続数に対して過小であったため、上限に達して新規ソケットのオープン（`accept`）ができなくなりました。\n\n---\n\n### 3. 安全な対処法\n1. **ファイルディスクリプタ上限（nofile）の引き上げ（恒久対策）**\n   * `ws-gateway` のコンテナ定義（Kubernetesの `securityContext` や Dockerの `ulimits`）またはホストOSの設定において、最大オープンファイル数（`ulimit -n`）を現在の約32,000から **65,536（64k）以上** に引き上げてデプロイします。\n2. **スケールアウト（レプリカ数の増加）**\n   * `ws-gateway` のポッド/インスタンス数を増やすことで、1インスタンスあたりの接続数を分散させ、個々のプロセスがFD上限に達するのを防ぎます。\n3. **接続タイムアウト（Idle Timeout）の最適化**\n   * アイドル状態のまま維持されている不要な接続を自動切断するため、WebSocketのキープアライブ（Ping/Pong）間隔や、無通信時のタイムアウト設定を短縮します。\n4. **段階的なローリング再起動（一時緩和策）**\n   * 既存の滞留接続を解放するために `ws-gateway` を再起動します。ただし、数万のクライアントが一斉に再接続を試みる「再接続スパイク（Thundering Herd問題）」を防ぐため、クライアント側に指数バックオフ（Exponential Backoff）とジッター（Jitter）が実装されていることを確認した上で、段階的にローリングアップデートを実施してください。",
+        "evidence": "KB未接続。検索結果が得られなかったため、提供された調査結果に対する過去の事例やRunbookに基づく根拠はありません。"
+      },
+      "evidence": [
+        {
+          "fact": "アクティブ接続数が 31,000 に達し、ファイルディスクリプタ使用率（open_fds_pct）が 99% に到達している。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに accept() failed: too many open files および fd limit reached が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "直近 2,880 分間（2日間）はデプロイや設定変更が行われていない。",
+          "source": "list_revisions"
+        }
+      ],
+      "remediation_plan": [
+        "ws-gateway のレプリカ数を増やしてスケールアウトし、1インスタンスあたりの接続負荷を分散する。",
+        "ws-gateway のコンテナ定義における最大オープンファイル数（ulimit -n）を 65,536 以上に引き上げる設定変更を適用する。",
+        "適用後、read_metrics で open_fds_pct が 50% 未満に低下し、新規接続エラーが解消されたことを確認する。"
+      ]
+    },
+    {
+      "case_id": "inc_015",
+      "root_cause_text": "geo-svcにおいて、外部ジオコーディングAPIのプラン制限超過に伴う429 Too Many Requestsエラーが多発していること",
+      "root_cause_category": "dependency_failure",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "read_config",
+        "check_cache",
+        "read_trace",
+        "check_dependency_status",
+        "check_quota",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "runbook_mitigation",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 7.734,
+      "latency_ms": 36170,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：外部APIのレート制限により住所変換リクエストの約40%が失敗しており、サービス全体のエラー率が13%まで上昇しているため、緊急度は高いです。影響範囲はジオコーディング機能を利用する全ユーザーに及んでいます。",
+        "investigation": "調査ツールを実行し、以下の事実を確認しました。\n\n### 1. 収集した事実\n* **エラー状況とメトリクス (`read_metrics`, `read_logs`)**:\n  * サービス全体のエラー率が **13%** に達しており、外部APIへのリクエストの **40%** が `429 Too Many Requests` で失敗しています。\n  * ログには `\"geocoding provider returned 429\"` および `\"rate limit exceeded for plan tier\"` が記録されており、外部ジオコーディングAPIの契約プランにおけるレート制限を超過していることが明確です。\n* **デプロイ・設定変更履歴 (`list_revisions`, `read_recent_deploy`, `read_config`)**:\n  * 直近（720分前 / 12時間以内）のデプロイや設定変更（環境変数の変更など）は行われていません。\n  * したがって、デプロイ起因のバグや設定ミスではなく、純粋なトラフィック増、あるいは特定のバッチ処理やリクエストの集中が原因と考えられます。\n\n---\n\n### 2. 根本原因\n* **外部APIのプラン制限超過**:\n  * 外部ジオコーディングAPIの現行プラン（Plan Tier）の制限を超えるリクエストが発生したため、プロバイダー側でレート制限（429）が適用されています。\n\n---\n\n### 3. 安全な対処案\n短期的および中長期的な対策として以下を推奨します。\n\n* **短期的な対処（即時対応）**:\n  * **APIプランのアップグレード**: 外部ジオコーディングAPIの契約プランを上位ティアへアップグレードし、レート制限の上限を緩和します。\n  * **クライアント側での流量制御（レートリミット）**: 自社サービス側で特定のユーザーやバッチ処理からのリクエストに対してレートリミッターを適用し、外部APIへの過剰なリクエスト集中を防ぎます。\n* **中長期的な対処（恒久対策）**:\n  * **キャッシュの導入・強化**: ジオコーディング結果（住所と座標のペア）をRedisなどのキャッシュに保持し、同一住所に対する外部APIへの問い合わせを削減します。\n  * **リトライ戦略の改善**: 429エラーを検知した際、即時リトライするのではなく、**指数バックオフ（Exponential Backoff）とジッター（Jitter）**を用いたリトライ処理を実装し、外部APIへの負荷を分散させます。",
+        "evidence": "調査の結果、本件は外部依存先（ジオコーディングAPI）のレート制限超過による障害であり、以下の根拠に基づき対応を検討してください。\n\n### 根拠\n* **外部依存障害への対応方針**: 外部依存先（下流API）の障害やレート制限超過は「dependency_failure」に該当します。この場合、自社側のコードに起因する問題ではないため、**ロールバックは無効**であり、復旧には寄与しません。\n  * 参照: `Runbook: 外部依存の障害連鎖（dependency failure）`\n  * 参照: `過去事例: 外部決済 API の 5xx — ロールバック無効、フェイルオーバーで回復`\n* **推奨される緩和策**: 外部依存障害に対しては、フェイルオーバー、サーキットブレーカの作動、リトライ抑制、または機能の縮退運転（一時停止）といった緩和策（runbook_mitigation）が推奨されます。\n  * 参照: `Runbook: 外部依存の障害連鎖（dependency failure）`\n\n### 調査結果の要約\n* **根本原因**: 外部ジオコーディングAPIのプラン制限超過（レート制限 429）。\n* **状況**: 直近のデプロイや設定変更はなく、自社サービス側のコード不具合ではないことが確認されています。"
+      },
+      "evidence": [
+        {
+          "fact": "サービス全体のエラー率が13%、外部APIへのリクエストの40%が429エラーで失敗している",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに'geocoding provider returned 429'および'rate limit exceeded for plan tier'が記録されている",
+          "source": "read_logs"
+        },
+        {
+          "fact": "直近720分以内にデプロイや設定変更は行われていない",
+          "source": "list_revisions"
+        },
+        {
+          "fact": "外部依存先の障害やレート制限超過に対してはロールバックは無効であり、緩和策が推奨される",
+          "source": "dependency-failure.md"
+        }
+      ],
+      "remediation_plan": [
+        "外部ジオコーディングAPIの契約プランを上位ティアへアップグレードし、レート制限の上限を緩和する。",
+        "geo-svcにおいてクライアント側での流量制御（レートリミッター）を適用し、外部APIへの過剰なリクエスト集中を防ぐ。",
+        "geo-svcのメトリクスを確認し、error_rateが1%未満に低下したことを3分間監視して検証する。"
+      ]
+    },
+    {
+      "case_id": "inc_016",
+      "root_cause_text": "リビジョン frontend-00210 のデプロイ後、CDNが古いJSバンドル main.abc123.js を配信し続け、最新の index.html が参照する main.def456.js との間でハッシュ不一致が発生したため。",
+      "root_cause_category": "data_cache_issue",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "check_cache",
+        "diff_revision",
+        "read_config",
+        "read_trace",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "cache_flush",
+      "confidence": 0.95,
+      "requires_hitl": true,
+      "cost_yen": 7.935,
+      "latency_ms": 34145,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。CDNのキャッシュヒット率が99%と極めて高く、古いJSバンドルが広範囲に配信され続けているため、ユーザーの多くがUIの不整合や白画面に直面している緊急性の高い状態です。",
+        "investigation": "調査によって判明した事実と、根本原因および安全な対処法を以下に報告します。\n\n### 1. 収集した事実\n* **直近のデプロイ**: 15分前に `frontend` サービスにてリビジョン `frontend-00210`（JSバンドル更新）がデプロイされました。\n* **エラーメトリクス**: \n  * JSエラー率 (`js_error_rate`) が **7% (0.07)** に上昇しています。\n  * CDNのキャッシュヒット率 (`cdn_cache_hit_rate`) が **99% (0.99)** と極めて高い状態を維持しています。\n* **ログの状況**:\n  * `CDN serving stale bundle main.abc123.js`（CDNが古いJSバンドル `main.abc123.js` を配信している）\n  * `index references main.def456.js`（最新の `index.html` は新しいJSバンドル `main.def456.js` を参照している）\n  * 新しいHTMLがデプロイされたものの、CDNが古いJSバンドルを配信し続けている、あるいは `index.html` 自体がキャッシュされて古いJSを参照しようとしてハッシュ不一致（白画面やUI不整合）が発生しています。\n\n---\n\n### 2. 根本原因\n* **CDNのキャッシュ不整合（パージ漏れ・不適切なキャッシュ設定）**\n  * 新しいリビジョン `frontend-00210` のデプロイ時に、CDN上のキャッシュ（特に `index.html` や古いJSアセット）が適切にパージ（Invalidation）されなかったため、新旧のアセットが混在して配信されています。\n  * また、エントリーポイントである `index.html` がCDNに強くキャッシュされる設定になっている可能性があります。\n\n---\n\n### 3. 安全な対処法\n1. **即時対応（キャッシュパージ）**:\n   * CDN（CloudFrontやCloudflare等）に対して、即座にキャッシュパージ（Invalidation）を実行します。対象パスは `/*` または `/index.html` および古いJSバンドルです。これにより、ユーザーが強制的に最新の `index.html` と対応するJSバンドルを取得できるようにします。\n2. **恒久対策（Cache-Controlの設定見直し）**:\n   * エントリーポイントである `index.html` の `Cache-Control` ヘッダーを `no-cache, no-store, must-revalidate` に設定し、ブラウザやCDNにキャッシュさせず、常に最新のHTML（＝最新のJSハッシュへの参照）を取得するようにします。\n   * ハッシュ付きのJS/CSSアセット（例: `main.[hash].js`）については、逆に `max-age=31536000, immutable` などの長期キャッシュを設定します。\n3. **デプロイパイプラインの改善**:\n   * CI/CDのデプロイフローの最後に、自動的にCDNのキャッシュパージを実行するステップを追加します。",
+        "evidence": "調査結果に基づき、以下の通り報告します。\n\n### 1. 収集した事実\n* **直近のデプロイ**: 15分前に `frontend` サービスにてリビジョン `frontend-00210`（JSバンドル更新）がデプロイされました。\n* **エラーメトリクス**: \n  * JSエラー率 (`js_error_rate`) が **7% (0.07)** に上昇しています。\n  * CDNのキャッシュヒット率 (`cdn_cache_hit_rate`) が **99% (0.99)** と極めて高い状態を維持しています。\n* **ログの状況**:\n  * `CDN serving stale bundle main.abc123.js`（CDNが古いJSバンドル `main.abc123.js` を配信している）\n  * `index references main.def456.js`（最新の `index.html` は新しいJSバンドル `main.def456.js` を参照している）\n  * 新しいHTMLがデプロイされたものの、CDNが古いJSバンドルを配信し続けている、あるいは `index.html` 自体がキャッシュされて古いJSを参照しようとしてハッシュ不整合（白画面やUI不整合）が発生しています。\n\n### 2. 根本原因\n* **CDNのキャッシュ不整合（パージ漏れ・不適切なキャッシュ設定）**\n  * 新しいリビジョン `frontend-00210` のデプロイ時に、CDN上のキャッシュ（特に `index.html` や古いJSアセット）が適切にパージ（Invalidation）されなかったため、新旧のアセットが混在して配信されています。\n  * また、エントリーポイントである `index.html` がCDNに強くキャッシュされる設定になっている可能性があります。\n  * 参照: `Runbook: キャッシュ/データ不整合（data / cache issue）`（症状：stale データの配信、CDN の stale）\n\n### 3. 安全な対処法\n1. **即時対応（キャッシュパージ）**:\n   * CDN（CloudFrontやCloudflare等）に対して、即座にキャッシュパージ（Invalidation）を実行します。対象パスは `/*` または `/index.html` および古いJSバンドルです。これにより、ユーザーが強制的に最新の `index.html` と対応するJSバンドルを取得できるようにします。\n   * 参照: `Runbook: キャッシュ/データ不整合（data / cache issue）`（推奨対処：該当キャッシュ/CDN をパージし再生成）\n2. **恒久対策（Cache-Controlの設定見直し）**:\n   * エントリーポイントである `index.html` の `Cache-Control` ヘッダーを `no-cache, no-store, must-revalidate` に設定し、ブラウザやCDNにキャッシュさせず、常に最新のHTML（＝最新のJSハッシュへの参照）を取得するようにします。\n   * ハッシュ付きのJS/CSSアセット（例: `main.[hash].js`）については、逆に `max-age=31536000, immutable` などの長期キャッシュを設定します。\n3. **デプロイパイプラインの改善**:\n   * CI/CDのデプロイフローの最後に、自動的にCDNのキャッシュパージを実行するステップを追加します。"
+      },
+      "evidence": [
+        {
+          "fact": "JSエラー率（js_error_rate）が 7% (0.07) に上昇している。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "CDNのキャッシュヒット率（cdn_cache_hit_rate）が 99% (0.99) と極めて高い状態を維持している。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに 'CDN serving stale bundle main.abc123.js' および 'index references main.def456.js' が記録されている。",
+          "source": "read_logs"
+        }
+      ],
+      "remediation_plan": [
+        "CDNに対して、/* または /index.html および古いJSアセットを対象に即時キャッシュパージ（Invalidation）を実行する。",
+        "パージ実行後、read_metrics を用いて js_error_rate が 1% 未満に低下し、エラーが収束したことを確認する。",
+        "恒久対策として、index.html の Cache-Control ヘッダーを no-cache, no-store, must-revalidate に設定し、CDNにキャッシュされないよう設定を修正する。"
+      ]
+    },
+    {
+      "case_id": "inc_017",
+      "root_cause_text": "recommend-api のリビジョン recommend-api-00099 における特徴量正規化ロジックの不具合により、モデル入力値が NaN-clamped zeros になり CTR が 1.2% に急落した。",
+      "root_cause_category": "deploy_regression",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_config",
+        "read_trace",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "rollback",
+      "confidence": 1.0,
+      "requires_hitl": false,
+      "cost_yen": 6.663,
+      "latency_ms": 32344,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高（CTRが約70%低下しており、収益およびユーザー体験に甚大な影響が出ている）。\n原因：デプロイされたリビジョン99における特徴量正規化ロジックの不具合により、モデル入力値が異常値（ゼロ埋め）となっている。",
+        "investigation": "調査ツールから収集した事実および根本原因の分析結果は以下の通りです。\n\n### 1. 収集した事実\n* **対象サービス**: `recommend-api`\n* **直近のデプロイ**: 25分前にリビジョン `recommend-api-00099` がデプロイされた（変更内容: 「特徴量正規化の実装変更」）。\n* **メトリクスの異常**:\n  * **CTR（クリック率）**: デプロイ後に `4.1%` から `1.2%` へと急落（約70%の低下）。\n  * **エラー率**: `0.002` と極めて低く、システム的なエラー（5xx等）は発生していない。\n  * **Feature Drift Score**: `0.87` と異常に高い値を記録。\n* **ログの異常**:\n  * `feature normalization producing NaN-clamped zeros after rev 99`（リビジョン99以降、特徴量正規化がNaNクランプされたゼロを生成している）\n  * `no exceptions, silent quality regression`（例外は発生しておらず、サイレントな品質劣化が発生している）\n* **コード/設定の差分 (`diff_revision`)**:\n  * リビジョン99が特徴量正規化のスケーリングロジックを破壊している。\n\n### 2. 根本原因\n* **原因カテゴリ**: アプリケーションコードのバグ（特徴量正規化ロジックの不具合）\n* **詳細**: リビジョン99で導入された特徴量正規化の変更において、スケーリング計算に不具合があり、モデルへの入力値がすべてNaNクランプされてゼロ（`0`）に埋め立てられてしまいました。例外が発生しないサイレントな不具合であったため、システムエラーとしては検知されず、推薦モデルの予測精度が著しく低下した結果、CTRの急落を招きました。\n\n### 3. 安全な対処方法\n* **対処方針**: 前リビジョン `recommend-api-00098` への巻き戻し（ロールバック）。\n* **安全性**: 本コンポーネントは状態を持たない（ステートレスな）ため、データ整合性の破損などのリスクなく、安全かつ迅速にクリーンな巻き戻しが可能です。",
+        "evidence": "調査の結果、以下の通り根拠を報告します。\n\n*   **デプロイ起因の不具合への対応**: 直近のデプロイ（リビジョン99）が原因で発生したコード不具合（リグレッション）については、データ破損を伴わない可逆的なケースであれば、前リビジョンへのロールバックが推奨される。\n    *   参照: `Runbook: デプロイ起因のエラー急騰（デプロイ・リグレッション）`\n*   **ロールバックの適用判断**: 外部依存の障害（dependency_failure）とは異なり、自サービスのコード不具合に起因する問題であるため、ロールバックは有効な手段となり得る。\n    *   参照: `Runbook: デプロイ起因のエラー急騰（デプロイ・リグレッション）`、`過去事例: 外部決済 API の 5xx — ロールバック無効、フェイルオーバーで回復`\n\nなお、モデル入力値の異常（NaNクランプによるゼロ埋め）に関する過去のポストモーテムは該当なしでした。"
+      },
+      "evidence": [
+        {
+          "fact": "CTRが4.1%から1.2%へ急落し、feature_drift_scoreが0.87を記録した。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに 'feature normalization producing NaN-clamped zeros after rev 99' および 'no exceptions, silent quality regression' が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "リビジョン recommend-api-00099 が特徴量正規化のスケーリングを破壊しているが、状態を持たないため前リビジョンへ安全に巻き戻し可能である。",
+          "source": "diff_revision"
+        }
+      ],
+      "remediation_plan": [
+        "前リビジョン recommend-api-00098 へトラフィックを 100% 切り替える。",
+        "切り替え後、read_metrics を用いて CTR が 4.1% 付近に回復し、feature_drift_score が正常値に低下することを確認する。",
+        "read_logs を用いて 'feature normalization producing NaN-clamped zeros' のログ出力が停止したことを確認する。"
+      ]
+    },
+    {
+      "case_id": "inc_018",
+      "root_cause_text": "リビジョン ledger-api-00063 のデプロイにおいて、再送処理の重複排除ロジックが欠落したため、128件の二重記帳（reconciliation_mismatch）が発生した。",
+      "root_cause_category": "deploy_regression",
+      "tool_trajectory": [
+        "read_metrics",
+        "read_logs",
+        "list_revisions",
+        "read_recent_deploy",
+        "diff_revision",
+        "read_trace",
+        "check_dependency_status",
+        "check_quota",
+        "check_cache",
+        "read_config",
+        "search_runbook",
+        "search_past_incidents",
+        "search_postmortem"
+      ],
+      "remediation_type": "code_fix",
+      "confidence": 1.0,
+      "requires_hitl": true,
+      "cost_yen": 7.931,
+      "latency_ms": 34716,
+      "tool_trajectory_detail": [
+        {
+          "agent": "triage",
+          "tool": "read_metrics"
+        },
+        {
+          "agent": "triage",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "list_revisions"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_recent_deploy"
+        },
+        {
+          "agent": "investigate",
+          "tool": "diff_revision"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_logs"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_trace"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_dependency_status"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_quota"
+        },
+        {
+          "agent": "investigate",
+          "tool": "check_cache"
+        },
+        {
+          "agent": "investigate",
+          "tool": "read_config"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_runbook"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_past_incidents"
+        },
+        {
+          "agent": "rag",
+          "tool": "search_postmortem"
+        }
+      ],
+      "reasoning": {
+        "triage": "重大度：高。ledger-apiのデプロイ以降、128件の残高不整合が発生しており、重複排除ロジックの欠落により現在も進行中の可能性があるため、緊急の対応が必要です。",
+        "investigation": "調査によって判明した事実と根本原因、および安全な対処法について報告いたします。\n\n### 1. 収集した事実\n* **発生している問題**:\n  * 残高照合の不一致が **128件** 発生しています（`reconciliation_mismatch: 128`）。\n  * ログには `double posting detected for txn`（トランザクションの二重記帳を検出）および `retry handler missing dedup after rev 63`（リビジョン63以降、リトライハンドラに重複排除が欠落している）が記録されています。\n* **直近の変更（デプロイ）**:\n  * 70分前に `ledger-api` サービスにて、リビジョン **`ledger-api-00063`**（前リビジョン: `ledger-api-00062`）がデプロイされました。\n  * このデプロイの変更内容は「記帳イベントの再送処理を追加」でした。\n\n### 2. 根本原因\n* **原因カテゴリ**: **コードのバグ（重複排除ロジックの欠落）**\n* **詳細**: \n  リビジョン `ledger-api-00063` で追加された「記帳イベントの再送処理（リトライハンドラ）」において、**重複排除（deduplication）ロジックが欠落**していました。そのため、再送されたイベントが二重に処理されて二重記帳が発生し、残高不整合を引き起こしました。\n  なお、前リビジョン（`ledger-api-00062`）にロールバックするだけでは、すでにデータベースに書き込まれてしまった既存の重複記帳データは削除されないため、残高不整合は解消しません。\n\n### 3. 安全な対処法\n1. **恒久的なコード修正とデプロイ**:\n   * リトライハンドラに適切な重複排除（冪等性キーのチェックなど）を実装した修正版コードを作成し、新規リビジョン（例: `ledger-api-00064`）としてデプロイします。\n2. **データの補正（補正記帳の実行）**:\n   * 二重記帳が発生した128件のトランザクションを特定します。\n   * 単純なデータ削除ではなく、整合性を保つために**補正記帳（逆仕訳や相殺トランザクションの流し込み）**を実行し、残高を正しい状態に復旧させます。",
+        "evidence": "ご提示いただいた調査結果に基づき、関連するナレッジベースを検索しましたが、今回の「デプロイによるコード起因の二重記帳」に直接合致する過去の Runbook や事例は見つかりませんでした。\n\n検索結果として得られた情報は以下の通りです。\n\n*   **検索結果の要点**:\n    *   検索された Runbook および過去事例は「外部依存（下流 API 等）の障害」に関するものであり、今回の「デプロイによるコードのバグ（重複排除ロジックの欠落）」とは根本原因が異なります。\n    *   参照した資料では「外部依存障害時にはロールバックが無効である」とされていますが、今回のケースはコード変更が直接の原因であるため、これらの資料の適用範囲外です。\n    *   参照: `dependency-failure.md`\n    *   参照: `payment-dep-failover.md`\n\n今回のインシデントについては、調査結果で特定された「コードのバグ（重複排除ロジックの欠落）」という事実に即した対処（修正版のデプロイおよび補正記帳）が適切であると考えられます。"
+      },
+      "evidence": [
+        {
+          "fact": "残高照合の不一致を示す reconciliation_mismatch が 128 件発生している。",
+          "source": "read_metrics"
+        },
+        {
+          "fact": "ログに double posting detected for txn および retry handler missing dedup after rev 63 が記録されている。",
+          "source": "read_logs"
+        },
+        {
+          "fact": "リビジョン ledger-api-00063 の diff にて、再送処理が重複排除を欠き二重記帳を発生させており、ロールバックのみでは解決しないことが確認された。",
+          "source": "diff_revision"
+        }
+      ],
+      "remediation_plan": [
+        "重複排除ロジックを実装した修正版コードを ledger-api の新規リビジョンとしてデプロイする。",
+        "二重記帳が発生した128件のトランザクションを特定し、データベースに対して補正記帳（逆仕訳）を実行する。",
+        "デプロイおよび補正後に、read_metrics で reconciliation_mismatch が 0 になり、エラーログが再発しないことを確認する。"
+      ]
+    }
+  ]
+}

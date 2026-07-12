@@ -1,0 +1,21 @@
+{
+  "id": "inc_016",
+  "title": "cdn-assets: デプロイ後にCDNが旧JSバンドルを配信（ハッシュ不一致）",
+  "difficulty": "medium",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "フロントで白画面/旧UI混在の報告 / アセットのハッシュ不一致",
+    "metrics": {"js_error_rate": 0.07, "cdn_cache_hit_rate": 0.99},
+    "recent_deploy": {"service": "frontend", "revision": "frontend-00210", "deployed_min_ago": 15, "note": "JSバンドル更新"},
+    "logs_sample": ["CDN serving stale bundle main.abc123.js", "index references main.def456.js"]
+  },
+  "ground_truth": {
+    "root_cause_category": "data_cache_issue",
+    "root_cause_keywords": ["CDN", "バンドル", "ハッシュ不一致", "stale"],
+    "expected_tool_trajectory": ["read_logs", "read_metrics", "check_cache"],
+    "recommended_remediation_type": "cache_flush",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["cache", "not-rollback", "cdn", "hitl"]
+}

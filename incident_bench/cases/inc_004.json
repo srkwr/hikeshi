@@ -1,0 +1,22 @@
+{
+  "id": "inc_004",
+  "title": "checkout: 決済ゲートウェイ(外部)が5xx→注文失敗が連鎖",
+  "difficulty": "hard",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "checkout 注文失敗率 急増 / トレースに外部 payment-gw 呼出失敗",
+    "metrics": {"error_rate": 0.34, "self_health": "ok"},
+    "trace_sample": ["span payment-gw.charge -> 503 Service Unavailable (repeated)"],
+    "recent_deploy": {"service": "checkout-api", "deployed_min_ago": 1440, "note": "直近デプロイなし"},
+    "logs_sample": ["upstream payment-gw returned 503", "our service healthy, dependency down"]
+  },
+  "ground_truth": {
+    "root_cause_category": "dependency_failure",
+    "root_cause_keywords": ["payment-gw", "5xx", "外部依存", "503"],
+    "expected_tool_trajectory": ["read_logs", "read_trace", "check_dependency_status", "search_runbook"],
+    "recommended_remediation_type": "runbook_mitigation",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["dependency", "not-rollback", "tests-judgment"]
+}

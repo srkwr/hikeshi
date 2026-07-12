@@ -1,0 +1,328 @@
+[
+ {
+  "ghsa_id": "GHSA-g936-7jqj-mwv8",
+  "cve_id": null,
+  "severity": "critical",
+  "summary": "TSDProxy: Internal proxy auth token forwarded to backend services enables management API escalation",
+  "published_at": "2026-07-10T21:43:13Z",
+  "html_url": "https://github.com/advisories/GHSA-g936-7jqj-mwv8",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/almeidapaulopt/tsdproxy"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-56mp-4f3v-fgj2",
+  "cve_id": "CVE-2026-50551",
+  "severity": "critical",
+  "summary": "SiYuan: Stored XSS to RCE via Unsanitized Attribute View Asset Cell Content",
+  "published_at": "2026-07-10T20:37:04Z",
+  "html_url": "https://github.com/advisories/GHSA-56mp-4f3v-fgj2",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/siyuan-note/siyuan/kernel"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-m5f5-28qr-9g9r",
+  "cve_id": "CVE-2026-54159",
+  "severity": "critical",
+  "summary": "prestashop/ps_facetedsearch: PHP Object Injection in faceted search cache allows unauthenticated RCE",
+  "published_at": "2026-07-10T20:36:56Z",
+  "html_url": "https://github.com/advisories/GHSA-m5f5-28qr-9g9r",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "composer",
+     "name": "prestashop/ps_facetedsearch"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-5xfx-xj4h-5p7r",
+  "cve_id": "CVE-2026-54158",
+  "severity": "critical",
+  "summary": "SiYuan: Stored XSS to RCE via attribute-view cell rendering in genAVValueHTML()",
+  "published_at": "2026-07-10T19:34:53Z",
+  "html_url": "https://github.com/advisories/GHSA-5xfx-xj4h-5p7r",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/siyuan-note/siyuan/kernel"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-m93h-4hw7-5qcm",
+  "cve_id": "CVE-2026-54088",
+  "severity": "critical",
+  "summary": "File Browser: Command Injection via Authentication Hook Shell Substitution (Pre-Authentication RCE)",
+  "published_at": "2026-07-10T19:32:32Z",
+  "html_url": "https://github.com/advisories/GHSA-m93h-4hw7-5qcm",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/filebrowser/filebrowser/v2"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-99j7-fhr2-xfj4",
+  "cve_id": null,
+  "severity": "critical",
+  "summary": "`exploration` was removed from crates.io for malicious code",
+  "published_at": "2026-07-10T19:32:24Z",
+  "html_url": "https://github.com/advisories/GHSA-99j7-fhr2-xfj4",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "rust",
+     "name": "exploration"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-xqp3-jq6g-x3qm",
+  "cve_id": "CVE-2026-54089",
+  "severity": "critical",
+  "summary": "File Browser: Authentication Bypass via Proxy Auth Header Forgery",
+  "published_at": "2026-07-10T19:27:13Z",
+  "html_url": "https://github.com/advisories/GHSA-xqp3-jq6g-x3qm",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/filebrowser/filebrowser/v2"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-hvr9-72v2-fff3",
+  "cve_id": "CVE-2026-54069",
+  "severity": "critical",
+  "summary": "SiYuan: Unauthenticated Admin API Access via Blanket chrome-extension:// Origin Allowlist",
+  "published_at": "2026-07-10T19:26:06Z",
+  "html_url": "https://github.com/advisories/GHSA-hvr9-72v2-fff3",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/siyuan-note/siyuan/kernel"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-h29v-hj44-q8cv",
+  "cve_id": "CVE-2026-54072",
+  "severity": "critical",
+  "summary": "Authorizer: Unvalidated redirect_uri in /authorize leaks OAuth2 tokens to attacker-controlled URL",
+  "published_at": "2026-07-10T19:25:15Z",
+  "html_url": "https://github.com/advisories/GHSA-h29v-hj44-q8cv",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/authorizerdev/authorizer"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-mvjr-vv3c-w4qv",
+  "cve_id": "CVE-2026-54067",
+  "severity": "critical",
+  "summary": "SiYuan: Stored XSS to RCE via CSS-snippet <style> breakout in renderSnippet()",
+  "published_at": "2026-07-10T19:25:09Z",
+  "html_url": "https://github.com/advisories/GHSA-mvjr-vv3c-w4qv",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/siyuan-note/siyuan/kernel"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-fpg8-7664-jc5q",
+  "cve_id": "CVE-2026-54174",
+  "severity": "high",
+  "summary": "melange: Incomplete package integrity verification allows data section substitution",
+  "published_at": "2026-07-10T21:43:05Z",
+  "html_url": "https://github.com/advisories/GHSA-fpg8-7664-jc5q",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "chainguard.dev/apko"
+    }
+   },
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "chainguard.dev/melange"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-h4g2-xfmw-q2c9",
+  "cve_id": null,
+  "severity": "high",
+  "summary": "Clauster: Non-loopback deployments can serve the dashboard unauthenticated when auth.enabled is unset",
+  "published_at": "2026-07-10T20:37:23Z",
+  "html_url": "https://github.com/advisories/GHSA-h4g2-xfmw-q2c9",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "pip",
+     "name": "clauster"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-g5r6-gv6m-f5jv",
+  "cve_id": null,
+  "severity": "high",
+  "summary": "mcp-atlassian: Arbitrary file read via missing path validation in confluence_upload_attachment",
+  "published_at": "2026-07-10T19:34:37Z",
+  "html_url": "https://github.com/advisories/GHSA-g5r6-gv6m-f5jv",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "pip",
+     "name": "mcp-atlassian"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-wm45-qh3g-v83f",
+  "cve_id": null,
+  "severity": "high",
+  "summary": "mcp-atlassian: Arbitrary server-side file read via attachment upload",
+  "published_at": "2026-07-10T19:34:30Z",
+  "html_url": "https://github.com/advisories/GHSA-wm45-qh3g-v83f",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "pip",
+     "name": "mcp-atlassian"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-xrmc-c5cg-rv7x",
+  "cve_id": null,
+  "severity": "high",
+  "summary": "SafeInstall agent guard shell parsing can miss raw package execution",
+  "published_at": "2026-07-10T19:34:14Z",
+  "html_url": "https://github.com/advisories/GHSA-xrmc-c5cg-rv7x",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "npm",
+     "name": "safeinstall-cli"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-qv4m-m73m-8hj7",
+  "cve_id": null,
+  "severity": "high",
+  "summary": "NotrinosERP: Authenticated arbitrary file upload leads to remote code execution via HRM employee \"Documents\" (doc_file)",
+  "published_at": "2026-07-10T19:34:03Z",
+  "html_url": "https://github.com/advisories/GHSA-qv4m-m73m-8hj7",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "composer",
+     "name": "notrinos/notrinos-erp"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-m8gf-v64p-gfmg",
+  "cve_id": "CVE-2026-54071",
+  "severity": "high",
+  "summary": "BabelDOC: Arbitrary Code Execution via CMap Pickle Deserialization in babeldoc/pdfminer/cmapdb.py",
+  "published_at": "2026-07-10T19:32:44Z",
+  "html_url": "https://github.com/advisories/GHSA-m8gf-v64p-gfmg",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "pip",
+     "name": "BabelDOC"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-w7cg-whh7-xp28",
+  "cve_id": "CVE-2026-54070",
+  "severity": "high",
+  "summary": "SiYuan: Stored XSS in Bazaar marketplace via package README event handlers",
+  "published_at": "2026-07-10T19:27:24Z",
+  "html_url": "https://github.com/advisories/GHSA-w7cg-whh7-xp28",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/siyuan-note/siyuan/kernel"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-h69g-9hx6-f3v4",
+  "cve_id": "CVE-2026-54063",
+  "severity": "high",
+  "summary": "Excelize: Unbounded Row Index Allocation in Worksheet Parser (checkSheet OOM/Panic DoS)",
+  "published_at": "2026-07-10T19:25:20Z",
+  "html_url": "https://github.com/advisories/GHSA-h69g-9hx6-f3v4",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/xuri/excelize/v2"
+    }
+   }
+  ]
+ },
+ {
+  "ghsa_id": "GHSA-p4m3-mgmm-c664",
+  "cve_id": "CVE-2026-54066",
+  "severity": "high",
+  "summary": "SiYuan: Path Traversal via Double URL Encoding in /assets/*path (publish mode arbitrary   file─read), Incomplete fix of CVE-2026-41894 ",
+  "published_at": "2026-07-10T19:25:04Z",
+  "html_url": "https://github.com/advisories/GHSA-p4m3-mgmm-c664",
+  "vulnerabilities": [
+   {
+    "package": {
+     "ecosystem": "go",
+     "name": "github.com/siyuan-note/siyuan/kernel"
+    }
+   }
+  ]
+ }
+]

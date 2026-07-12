@@ -1,0 +1,22 @@
+{
+  "id": "inc_008",
+  "title": "orders-api: 認証プロバイダ(外部)のレイテンシ悪化で連鎖タイムアウト",
+  "difficulty": "medium",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "orders-api タイムアウト増 / 認証コールバック待ちでスレッド枯渇",
+    "metrics": {"error_rate": 0.16, "upstream_idp_latency_ms": [120, 800, 2600, 5000]},
+    "trace_sample": ["span idp.verify_token -> 5s timeout (repeated)"],
+    "recent_deploy": {"service": "orders-api", "revision": "orders-api-00054", "deployed_min_ago": 18, "note": "依存先には触れていない"},
+    "logs_sample": ["idp token verify timeout", "our latency normal until idp slowdown"]
+  },
+  "ground_truth": {
+    "root_cause_category": "dependency_failure",
+    "root_cause_keywords": ["idp", "認証プロバイダ", "外部依存", "タイムアウト"],
+    "expected_tool_trajectory": ["read_trace", "read_logs", "check_dependency_status"],
+    "recommended_remediation_type": "runbook_mitigation",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["dependency", "not-rollback", "red-herring-deploy", "hitl"]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "inc_013",
+  "title": "txn-api: マネージドDBのフェイルオーバ中に書き込み失敗が断続発生",
+  "difficulty": "hard",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "txn-api 書き込み 5xx 断続 / 'read-only / connection reset' ログ",
+    "metrics": {"write_error_rate": [0.02, 0.18, 0.05, 0.22], "self_health": "ok"},
+    "trace_sample": ["span db.write -> connection reset during failover"],
+    "recent_deploy": {"service": "txn-api", "deployed_min_ago": 600, "note": "直近デプロイなし"},
+    "logs_sample": ["primary failover in progress (managed db maintenance window)", "writes intermittently rejected"]
+  },
+  "ground_truth": {
+    "root_cause_category": "dependency_failure",
+    "root_cause_keywords": ["フェイルオーバ", "マネージドDB", "外部依存", "書き込み失敗"],
+    "expected_tool_trajectory": ["read_logs", "read_trace", "check_dependency_status", "search_runbook"],
+    "recommended_remediation_type": "runbook_mitigation",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["dependency", "not-rollback", "hitl", "db-failover"]
+}

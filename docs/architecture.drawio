@@ -1,0 +1,125 @@
+<mxfile host="app.diagrams.net" agent="Hikeshi" version="24.7.0">
+  <diagram name="Hikeshi Architecture" id="hikeshi-arch-1">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="740" background="#FBF8F2" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Hikeshi — アーキテクチャ（消火 = reactive ／ 防火 = guarded release・HITL 内蔵）" style="text;html=1;fontStyle=1;fontSize=18;fontColor=#1C1C1C;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="18" width="1040" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============ BAND A: 消火 ============ -->
+        <mxCell id="la" value="① 消火 Reactive ｜ Root（orchestrator）が統括 — alert → Triage → 調査 → RAG → 対処（HITL 内蔵）" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#B8392C;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="62" width="900" height="22" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a_kb" value="Knowledge Base&#10;Vector Search 2.0&#10;過去事例 + Runbook" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#EAD9C0;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="470" y="92" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a_alert" value="アラート&#10;(signals)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="182" width="80" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="a_triage" value="Triage&#10;重大度/影響 判定&#10;[3.1 Flash-Lite]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="150" y="179" width="120" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="a_invest" value="Investigate 調査&#10;logs / metrics / trace&#10;[3.5 Flash]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="300" y="179" width="140" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="a_rag" value="RAG 事例検索&#10;ハイブリッド検索&#10;[Flash-Lite + 検索]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="470" y="179" width="160" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="a_hypo" value="原因仮説&#10;+ 確信度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="660" y="179" width="120" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="a_remediate" value="Remediate 対処&#10;対処提案 + 安全性判定&#10;[3.5 Flash ／ 最難RCA = Pro]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="810" y="173" width="170" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="a_gate" value="安全境界&#10;Safety Gate" style="rhombus;whiteSpace=wrap;html=1;fillColor=#B8392C;strokeColor=#8C2A20;fontColor=#FFFFFF;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1010" y="173" width="130" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="a_auto" value="自動実行&#10;rollback（可逆のみ）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAD9C0;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="116" width="170" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="a_hitl" value="HITL 承認 UI&#10;当番1人・承認1クリック" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B8392C;strokeColor=#8C2A20;fontColor=#FFFFFF;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1170" y="196" width="170" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="a_verify" value="検証 verify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="286" width="120" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="a_post" value="Postmortem 事後&#10;学習・Runbook 更新" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="990" y="282" width="150" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Band A edges -->
+        <mxCell id="ea1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_alert" target="a_triage"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_triage" target="a_invest"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_invest" target="a_rag"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea4" value="読" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;dashed=1;fontSize=10;" edge="1" parent="1" source="a_kb" target="a_rag"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_invest" target="a_hypo"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="370" y="258"/><mxPoint x="720" y="258"/></Array></mxGeometry></mxCell>
+        <mxCell id="ea6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_rag" target="a_hypo"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_hypo" target="a_remediate"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_remediate" target="a_gate"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea9" value="rollback（可逆）" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;fontSize=10;" edge="1" parent="1" source="a_gate" target="a_auto"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea10" value="rollback以外（config/依存/cache/scale 等）→ 要承認" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B8392C;endArrow=block;fontSize=10;fontColor=#B8392C;" edge="1" parent="1" source="a_gate" target="a_hitl"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_auto" target="a_verify"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea12" value="承認時のみ" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;fontSize=10;" edge="1" parent="1" source="a_hitl" target="a_verify"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="a_verify" target="a_post"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea14" value="evalset / Runbook 更新（自己改善ループ）" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;dashed=1;fontSize=10;" edge="1" parent="1" source="a_post" target="a_kb"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="700" y="307"/><mxPoint x="700" y="127"/></Array></mxGeometry></mxCell>
+
+        <!-- ============ BAND B: 防火 ============ -->
+        <mxCell id="lb" value="② 防火 Guarded Release ｜ 安全な配信（カナリア = 可逆 → ガードレール違反で自動ロールバック）" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#B8392C;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="372" width="940" height="22" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b_release" value="Release 配信ガード&#10;[3.5 Flash]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="408" width="140" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="b_deploy" value="Cloud Deploy&#10;Canary / Blue-Green" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="200" y="408" width="160" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="b_run" value="Cloud Run&#10;トラフィック分割" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="390" y="408" width="150" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="b_analysis" value="deploy analysis&#10;Cloud Monitoring + BigQuery ML&#10;(ARIMA_PLUS 異常検知)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EFE6;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="570" y="402" width="210" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="b_guard" value="Guardrail&#10;エラー/レイテンシ + エンゲージ SLO" style="rhombus;whiteSpace=wrap;html=1;fillColor=#B8392C;strokeColor=#8C2A20;fontColor=#FFFFFF;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="810" y="404" width="170" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="b_advance" value="advance 昇格&#10;（100% 昇格 = HITL）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAD9C0;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="378" width="190" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="b_rollback" value="自動ロールバック&#10;repairRolloutRule" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B8392C;strokeColor=#8C2A20;fontColor=#FFFFFF;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1010" y="450" width="190" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- Band B edges -->
+        <mxCell id="eb1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="b_release" target="b_deploy"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="b_deploy" target="b_run"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="b_run" target="b_analysis"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;" edge="1" parent="1" source="b_analysis" target="b_guard"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb5" value="OK" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;fontSize=10;" edge="1" parent="1" source="b_guard" target="b_advance"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb6" value="違反" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#B8392C;endArrow=block;fontSize=10;fontColor=#B8392C;" edge="1" parent="1" source="b_guard" target="b_rollback"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb7" value="次フェーズへ" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1C1C1C;endArrow=block;dashed=1;fontSize=10;" edge="1" parent="1" source="b_advance" target="b_run"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1230" y="350"/><mxPoint x="465" y="350"/></Array></mxGeometry></mxCell>
+
+        <!-- ============ BAND C: foundation / contract ============ -->
+        <mxCell id="lc" value="③ 土台 / 入出力契約 / 安全不変条件" style="text;html=1;fontStyle=1;fontSize=13;fontColor=#1C1C1C;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="538" width="400" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="f_stack" value="土台 ｜ ADK 2.x ・ Gemini 3.x（3段ルーティング: 3.1 Flash-Lite / 3.5 Flash / Pro）・ Cloud Run ・ Vector Search 2.0 ・ Cloud Deploy ・ Cloud Observability (OTel→Trace/Monitoring) ・ BigQuery ML" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1C1C1C;strokeColor=#1C1C1C;fontColor=#F4EFE6;fontSize=11;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="570" width="900" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="f_contract" value="契約 ｜ IncidentCase → AgentOutput&#10;（= INCIDENT-BENCH でそのまま採点）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAD9C0;strokeColor=#1C1C1C;fontColor=#1C1C1C;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="960" y="570" width="380" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="f_safety" value="安全不変条件 ｜ remediation_type == rollback ⟹ auto_remediable == true ／ is_reversible == false ⟹ 自動対処不可（必ず HITL）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBF8F2;strokeColor=#B8392C;fontColor=#1C1C1C;fontSize=11;dashed=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="632" width="1300" height="36" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

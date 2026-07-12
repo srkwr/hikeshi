@@ -1,0 +1,22 @@
+{
+  "id": "inc_018",
+  "title": "ledger-api: デプロイで二重記帳→残高不整合（巻き戻しでは既存の重複は消えない）",
+  "difficulty": "medium",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "残高照合の不一致アラート / 一部取引が二重記帳",
+    "metrics": {"reconciliation_mismatch": 128, "error_rate": 0.001},
+    "recent_deploy": {"service": "ledger-api", "revision": "ledger-api-00063", "prev_revision": "ledger-api-00062", "deployed_min_ago": 70, "note": "記帳イベントの再送処理を追加"},
+    "logs_sample": ["double posting detected for txn", "retry handler missing dedup after rev 63"],
+    "diff_summary": "rev 63 の再送処理が重複排除を欠き二重記帳。rollback しても既に記帳済みの重複は残るため、修正＋補正記帳が必要。"
+  },
+  "ground_truth": {
+    "root_cause_category": "deploy_regression",
+    "root_cause_keywords": ["二重記帳", "重複排除", "rev 63", "残高不整合"],
+    "expected_tool_trajectory": ["read_logs", "read_metrics", "diff_revision", "search_past_incidents"],
+    "recommended_remediation_type": "code_fix",
+    "is_reversible": false,
+    "auto_remediable": false
+  },
+  "tags": ["deploy", "code_fix", "not-rollback", "tests-judgment", "hitl", "financial"]
+}

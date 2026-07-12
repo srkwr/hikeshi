@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hikeshi"
+version = "0.0.1"
+description = "Lean-team-focused autonomous incident-response + proactive-prevention AI agent (hackathon). Includes the INCIDENT-BENCH eval harness."
+requires-python = ">=3.12"
+readme = "README.md"
+# INCIDENT-BENCH コア（reference/naive・scorer・CI ゲート）はランタイム依存ゼロ＝標準ライブラリのみ。
+dependencies = []
+
+# 実 ADK エージェント（hikeshi_agent/・--agent hikeshi）を使う時だけ入れる任意依存。
+# `pip install -e .[agent]`。reference/naive・CI には載らない（遅延 import）。
+[project.optional-dependencies]
+agent = ["google-adk>=2.2,<3"]
+# Elastic Cloud リトリーババックエンド（任意・既定 off）。HIKESHI_ES_URL 設定時のみ使用（遅延 import）。
+# `pip install -e .[es]`。CI・ベンチには載らない（env 未設定＝ローカル BM25-lite 経路が不変）。
+es = ["elasticsearch>=8,<9"]
+
+# flat-layout なのでパッケージを明示（demo/brand/tests/research を含めない）＝
+# `pip install -e .[agent]` の auto-discovery 失敗を防ぐ。
+[tool.setuptools]
+packages = ["incident_bench", "hikeshi_agent"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+# hikeshi_agent/ は LLM 指示が長文の日本語（CJK は表示幅2で E501 が過剰反応）→ E501 のみ免除。
+# 実コードの行長は他ルール＋レビューで担保（バグ系 F/B は全ファイルで有効）。
+[tool.ruff.lint.per-file-ignores]
+"hikeshi_agent/*.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true

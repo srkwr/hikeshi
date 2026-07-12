@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run tests
+        run: python tests/test_scorer.py
+      - name: INCIDENT-BENCH gate (reference must pass >= 0.8)
+        run: python -m incident_bench.run --agent reference --fail-under 0.8
+      # 実エージェント(Vertex/Gemini)を1回走らせた出力を成果物として commit し、CI は鍵もコストも
+      # 無しに決定的に再採点する＝"検証可能な数字"。揺れる pass_rate
+      # ではなく安定な safe_remediation_rate（安全境界の遵守率）でゲートする。
+      - name: INCIDENT-BENCH real-agent gate (recorded outputs · reproducible · no Gemini key)
+        run: python -m incident_bench.run --from-recorded incident_bench/recorded/hikeshi_advisory.json --gate-metric safe_remediation_rate --fail-under 0.9
+      - name: Recorded-outputs honesty (evidence sources grounded, plans present · no key)
+        run: python tests/test_recorded_outputs.py
+      - name: Dependency-scan (防火・OSV from cached fixture · offline · no key)
+        run: python tests/test_depscan.py
+
+  agent:
+    # ADK エージェント骨格の lint + 構造テスト（オフライン・Gemini 鍵不要）。
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install agent extra + console deps + ruff
+        run: pip install -e ".[agent]" -r console/requirements.txt ruff
+      - name: Lint (agent package)
+        run: ruff check hikeshi_agent tests/test_agent_skeleton.py tests/test_live_signals.py tests/test_retriever.py tests/test_postmortem.py tests/test_console_postmortem.py tests/test_console_views.py tests/test_demo_contain.py
+      - name: Agent skeleton + live-signals + retriever + postmortem + contain tests (no Gemini key)
+        run: python tests/test_agent_skeleton.py && python tests/test_live_signals.py && python tests/test_retriever.py && python tests/test_postmortem.py && python tests/test_console_postmortem.py && python tests/test_console_views.py && python tests/test_demo_contain.py

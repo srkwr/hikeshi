@@ -1,0 +1,22 @@
+{
+  "id": "inc_001",
+  "title": "checkout-api: デプロイ後にp95レイテンシ急騰（N+1クエリ）",
+  "difficulty": "easy",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "checkout-api p95 latency 215ms -> 1850ms (8分継続)",
+    "metrics": {"latency_p95_ms": [212, 218, 1850, 1920], "error_rate": 0.018, "qps": 124},
+    "recent_deploy": {"service": "checkout-api", "revision": "checkout-api-00042", "prev_revision": "checkout-api-00041", "deployed_min_ago": 8},
+    "logs_sample": ["DB slow query 1.62s: SELECT * FROM order_items WHERE order_id = ?", "per-item query repeated N times"],
+    "diff_summary": "rev 00042 がバッチ取得を item ごとの個別クエリに変更（N+1）"
+  },
+  "ground_truth": {
+    "root_cause_category": "deploy_regression",
+    "root_cause_keywords": ["N+1", "rev 00042", "個別クエリ", "デプロイ"],
+    "expected_tool_trajectory": ["read_metrics", "read_logs", "list_revisions", "diff_revision", "search_runbook"],
+    "recommended_remediation_type": "rollback",
+    "is_reversible": true,
+    "auto_remediable": true
+  },
+  "tags": ["flagship-demo", "latency", "deploy"]
+}

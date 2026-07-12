@@ -1,0 +1,21 @@
+{
+  "id": "inc_014",
+  "title": "ws-gateway: 接続数の継続増でファイルディスクリプタ枯渇",
+  "difficulty": "hard",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "ws-gateway 新規接続が断られる / 'too many open files' ログ",
+    "metrics": {"open_fds_pct": [70, 82, 91, 99], "active_connections": [12000, 18000, 24000, 31000]},
+    "recent_deploy": {"service": "ws-gateway", "deployed_min_ago": 2880, "note": "2日間デプロイなし・接続数は連日漸増"},
+    "logs_sample": ["accept() failed: too many open files", "fd limit reached"]
+  },
+  "ground_truth": {
+    "root_cause_category": "resource_exhaustion",
+    "root_cause_keywords": ["ファイルディスクリプタ", "枯渇", "接続数", "漸増"],
+    "expected_tool_trajectory": ["read_metrics", "read_logs", "check_quota", "search_postmortem"],
+    "recommended_remediation_type": "scale",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["resource", "scale", "not-rollback", "leading-indicator", "hitl"]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "inc_015",
+  "title": "geo-svc: 外部ジオコーディングAPIのレート制限で429多発",
+  "difficulty": "easy",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "geo-svc 住所変換失敗増 / 外部API 429 Too Many Requests",
+    "metrics": {"error_rate": 0.13, "upstream_429_rate": 0.4},
+    "recent_deploy": {"service": "geo-svc", "deployed_min_ago": 720, "note": "直近デプロイなし"},
+    "logs_sample": ["geocoding provider returned 429", "rate limit exceeded for plan tier"]
+  },
+  "ground_truth": {
+    "root_cause_category": "dependency_failure",
+    "root_cause_keywords": ["429", "レート制限", "外部API", "ジオコーディング"],
+    "expected_tool_trajectory": ["read_logs", "check_dependency_status"],
+    "recommended_remediation_type": "runbook_mitigation",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["dependency", "not-rollback", "rate-limit", "hitl"]
+}

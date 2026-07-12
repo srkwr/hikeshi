@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HIKESHI — 江戸火消し流 運用コンソール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500&family=Shippori+Mincho:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --kinari:#F4EFE6; --surface-1:rgba(234,224,205,.78); --surface-2:rgba(253,251,247,.8); --surface-3:rgba(231,222,204,.82); --hover:rgba(237,229,213,.88);
+    --line:#E0D8C6; --line-strong:#CFC2AA;
+    --sumi:#1C1C1C; --muted:#5C5446; --muted-2:#6A6254; --ash:#6B6355;
+    --shu:#B8392C; --shu-dark:#8E2B21;
+    --ok:#3F5039; --ok-bg:#E7ECDF; --warn:#7A5210; --warn-bg:#F4E8CF;
+    --danger:#7A2017; --danger-bg:#F3DED9; --danger-line:#D6AEA6; --warn-line:#DBC089;
+    --info:#45557A; --info-bg:#E4E8F0;
+    --t-cap:11px; --t-base:13px; --t-md:15px; --t-lg:18px; --t-xl:24px;
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+    --r-data:3px; --r-control:4px; --r-card:6px; --r-pill:9999px;
+    --sh-pop:0 1px 2px rgba(28,28,28,.05),0 8px 24px rgba(28,28,28,.12);
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --serif:'Shippori Mincho',"Hiragino Mincho ProN","Yu Mincho",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden}
+  body{background:var(--kinari);color:var(--sumi);font-family:var(--sans);font-size:var(--t-base);line-height:1.45;
+    letter-spacing:-.006em;-webkit-font-smoothing:antialiased}
+  .num{font-variant-numeric:tabular-nums lining-nums}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  svg.ic{flex:none;vertical-align:middle}
+  button{font-family:inherit}
+  :focus-visible{outline:2px solid var(--shu);outline-offset:1px;border-radius:3px}
+
+  /* ポストモーテム→KB 提案（HITL） */
+  .btn-pm{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:var(--surface-2);color:var(--sumi);
+    border:1px solid var(--line-strong);border-radius:var(--r-control);font-size:var(--t-base);font-weight:600;cursor:pointer}
+  .btn-pm:hover{background:var(--hover)}
+  .btn-pm:disabled{opacity:.5;cursor:default}
+  .pm{margin-top:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface-2);padding:var(--sp-3)}
+  .pm-h{display:flex;align-items:center;gap:6px;font-weight:600;font-size:var(--t-base);margin-bottom:var(--sp-2);color:var(--muted)}
+  #pm-text{width:100%;min-height:170px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.5;
+    border:1px solid var(--line-strong);border-radius:var(--r-control);background:var(--kinari);color:var(--sumi);padding:8px}
+  .post-actions{display:flex;gap:var(--sp-2);margin-top:var(--sp-2);flex-wrap:wrap}
+  .pm-actions{display:flex;gap:var(--sp-2);margin-top:var(--sp-2);flex-wrap:wrap}
+  .btn-pm-ghost{padding:7px 12px;background:transparent;border:1px solid var(--line);border-radius:var(--r-control);
+    color:var(--muted);font-size:var(--t-base);cursor:pointer}
+  .btn-pm-ghost:hover{background:var(--hover)}
+  .pm-note{margin-top:var(--sp-2);font-size:var(--t-cap);color:var(--ash)}
+
+  .app{position:relative;z-index:1;display:grid;grid-template-columns:240px minmax(0,1fr);grid-template-rows:56px minmax(0,1fr);height:100vh;overflow:hidden}
+  .sidebar{grid-row:1/3;background:var(--surface-1);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto;min-height:0;
+    /* 青海波（せいがいは）— 極薄のインラインSVGパターン */
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='none' stroke='%231C1C1C' stroke-opacity='0.045' stroke-width='1'%3E%3Ccircle cx='20' cy='20' r='19'/%3E%3Ccircle cx='20' cy='20' r='13'/%3E%3Ccircle cx='20' cy='20' r='7'/%3E%3Ccircle cx='0' cy='30' r='19'/%3E%3Ccircle cx='0' cy='30' r='13'/%3E%3Ccircle cx='0' cy='30' r='7'/%3E%3Ccircle cx='40' cy='30' r='19'/%3E%3Ccircle cx='40' cy='30' r='13'/%3E%3Ccircle cx='40' cy='30' r='7'/%3E%3C/g%3E%3C/svg%3E")}
+  .topbar{grid-column:2;display:flex;align-items:center;gap:var(--sp-3);padding:0 var(--sp-4);background:var(--kinari);border-bottom:1px solid var(--line)}
+  .main{grid-column:2;min-height:0;overflow:hidden;display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:var(--sp-2);padding:var(--sp-2) var(--sp-3)}
+
+  /* sidebar */
+  .brand{display:flex;align-items:center;gap:var(--sp-2);height:56px;padding:0 var(--sp-4);border-bottom:1px solid var(--line)}
+  .brand .logo{width:24px;height:24px;flex:none}
+  .brand .nm{font-family:var(--serif);font-size:var(--t-md);font-weight:700;line-height:1.1}
+  .brand .sub{font-size:10px;color:var(--muted);line-height:1.2;margin-top:1px}
+  .crumb b{font-family:var(--serif)}
+  .nav-row .nv-sub{font-size:9px;color:var(--muted-2);font-weight:400;margin-left:auto;white-space:nowrap}
+  .nav-cap{font-size:var(--t-cap);font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-2);padding:var(--sp-3) var(--sp-4) var(--sp-1)}
+  .nav-row{display:flex;align-items:center;gap:var(--sp-2);width:100%;height:30px;padding:0 var(--sp-4);color:var(--muted);
+    font-size:var(--t-base);font-weight:500;cursor:pointer;background:transparent;border:0;text-align:left;position:relative;transition:background .14s,color .14s}
+  .nav-row:hover{background:var(--hover);color:var(--sumi)}
+  .nav-row.active{color:var(--sumi);background:var(--surface-2);box-shadow:inset 2px 0 0 var(--shu);cursor:default}
+  .nav-row.active:hover{background:var(--surface-2);color:var(--sumi)}
+  .nav-row[aria-disabled="true"]{cursor:default;opacity:.45}
+  .nav-row[aria-disabled="true"]:hover{background:transparent;color:var(--muted)}
+  .svc{padding:var(--sp-1) var(--sp-4) var(--sp-2)}
+  .svc-row{display:flex;align-items:center;gap:var(--sp-2);padding:3px 0;font-size:var(--t-base);line-height:1.25}
+  .svc-row .dot{width:7px;height:7px;border-radius:var(--r-pill);flex:none;background:var(--ash)}
+  .svc-row .nm2{font-family:var(--mono);font-size:var(--t-base);color:var(--sumi)}
+  .svc-row .st{margin-left:auto;font-size:var(--t-cap);color:var(--muted);font-variant-numeric:tabular-nums}
+  .svc-sub{padding-left:var(--sp-3)}
+  .svc-sub .svc-row{color:var(--muted)}
+  .sb-foot{margin-top:auto;border-top:1px solid var(--line);padding:var(--sp-3) var(--sp-4);display:flex;align-items:center;gap:var(--sp-2)}
+  .avatar{width:26px;height:26px;border-radius:var(--r-pill);background:var(--surface-3);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:var(--t-cap);font-weight:600;color:var(--muted)}
+  .sb-foot .who{font-size:var(--t-cap);line-height:1.25}
+  .sb-foot .who b{font-weight:600} .sb-foot .who span{color:var(--muted)}
+
+  /* topbar */
+  .crumb{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--t-base);color:var(--muted);min-width:0}
+  .crumb b{color:var(--sumi);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:9ch}
+  .crumb .iid{font-family:var(--mono);font-size:var(--t-base);color:var(--muted)}
+  .crumb .sep{color:var(--line-strong)}
+  .tb-cat{display:inline-flex;align-items:center;gap:var(--sp-1);font-size:var(--t-cap);font-weight:600;padding:3px var(--sp-2);white-space:nowrap;
+    border-radius:var(--r-data);border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
+  .tb-cat .gl{width:7px;height:7px;border-radius:var(--r-pill);background:var(--ash)}
+  .tb-cat.fault{color:var(--danger);border-color:var(--danger-line);background:var(--danger-bg)}
+  .tb-cat.fault .gl{background:var(--shu);animation:pulse 1.7s ease-out infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(184,57,44,.4)}100%{box-shadow:0 0 0 8px rgba(184,57,44,0)}}
+  .spacer{flex:1}
+  .kv{display:inline-flex;align-items:baseline;gap:var(--sp-1);font-size:var(--t-cap)}
+  .kv .k{color:var(--muted-2)} .kv .v{font-family:var(--mono);font-weight:500;color:var(--sumi);font-variant-numeric:tabular-nums}
+  .clock{font-family:var(--mono);font-size:var(--t-base);color:var(--muted);font-variant-numeric:tabular-nums}
+  .pill{display:inline-flex;align-items:center;gap:var(--sp-1);font-size:var(--t-cap);font-weight:500;padding:3px var(--sp-2);
+    border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
+  .pill .dot{width:7px;height:7px;border-radius:var(--r-pill);background:var(--ash)}
+  .pill.ok .dot{background:var(--ok)} .pill.down .dot{background:var(--danger)}
+  .btn-ghost{display:inline-flex;align-items:center;gap:var(--sp-1);font-size:12px;font-weight:500;color:var(--sumi);white-space:nowrap;
+    background:transparent;border:1px solid var(--line);border-radius:var(--r-control);padding:5px var(--sp-3);cursor:pointer;transition:background .14s}
+  .btn-ghost:hover{background:var(--surface-2)}
+
+  /* KPI ribbon (metrics demoted to a thin stat header with inline sparkline) */
+  .ribbon{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-card)}
+  .rib{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-2) var(--sp-3);min-width:0}
+  .rib+.rib{border-left:1px solid var(--line)}
+  .rib .meta{min-width:0;display:flex;flex-direction:column;gap:1px}
+  .rib .lab{display:flex;align-items:center;gap:5px;font-size:var(--t-cap);color:var(--muted);white-space:nowrap}
+  .rib .lab .dot{width:7px;height:7px;border-radius:var(--r-pill);background:var(--ok);flex:none}
+  .rib .lab .dot.bad{background:var(--danger)}
+  .rib .val{font-size:var(--t-lg);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rib .val.bad{color:var(--shu-dark)}
+  .rib.status .val{font-size:var(--t-md)}
+  .rib .spark{margin-left:auto;width:64px;height:26px;flex:none}
+  .rib .delta{font-size:10px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .rib .delta.up{color:var(--danger)} .rib .delta.down{color:var(--ok)}
+
+  /* work: feed (master) + rail (detail) */
+  .work{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:minmax(0,1fr);gap:var(--sp-2);min-height:0;overflow:hidden}
+  @media(max-width:1280px){.work{grid-template-columns:minmax(0,1fr) 320px}}
+  @media(max-width:1040px){.main{overflow:auto}.work{grid-template-columns:1fr;overflow:visible}.work .card.scroll{max-height:none;overflow:visible}.rail{overflow:visible}.ribbon{grid-template-columns:repeat(2,1fr)}.rib:nth-child(2){border-left:none}.rib:nth-child(3),.rib:nth-child(4){border-top:1px solid var(--line)}}
+  @media(max-width:820px){.app{grid-template-columns:56px minmax(0,1fr)}.brand .nm,.brand .sub,.nav-row span,.nav-cap,.svc,.sb-foot .who{display:none}.brand,.sb-foot{padding:0;justify-content:center}.nav-row{justify-content:center;padding:0}}
+  @media(max-width:1100px){.topbar .kv{display:none}}
+  @media(max-width:560px){.ribbon{grid-template-columns:1fr}.rib+.rib{border-left:none;border-top:1px solid var(--line)}}
+  @media(max-width:480px){.clock{display:none}}
+  @media(max-width:440px){#page-oncall .lbl{display:none}}
+
+  .card{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-card)}
+  .card.scroll{display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0;overflow:hidden}
+  .card.scroll .card-b{min-height:0;overflow-y:auto}
+  .card-h{display:flex;align-items:center;gap:var(--sp-2);height:34px;padding:0 var(--sp-3);border-bottom:1px solid var(--line)}
+  .card-h .t{font-size:var(--t-base);font-weight:600;color:var(--sumi)}
+  .card-h .ic{color:var(--muted)}
+  .card-h .hint{margin-left:auto;font-size:var(--t-cap);color:var(--muted-2);font-variant-numeric:tabular-nums}
+  .card-b{padding:var(--sp-3)}
+  .rail{display:flex;flex-direction:column;gap:var(--sp-2);min-height:0;overflow-y:auto}
+  .rail>.card{flex:none}
+
+  /* inject bar (top of feed) */
+  .inject{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:nowrap;overflow:hidden;padding-bottom:var(--sp-3);border-bottom:1px solid var(--line);margin-bottom:var(--sp-3)}
+  .inject .lab{font-size:var(--t-cap);color:var(--muted-2);white-space:nowrap;font-weight:500}
+  .scn{display:flex;gap:var(--sp-1);min-width:0;flex:1}
+  .chip{min-width:0;flex:1;text-align:left;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-control);
+    padding:4px var(--sp-2);cursor:pointer;transition:border-color .14s,background .14s;overflow:hidden}
+  .chip:hover{background:var(--surface-3);border-color:var(--line-strong)}
+  .chip:active{transform:translateY(1px)}
+  .chip:disabled{opacity:.5;cursor:not-allowed}
+  .chip .cn{font-size:var(--t-base);font-weight:500;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip .cn .ic{color:var(--muted);flex:none}
+  .chip .cs{display:none}
+  .chip.armed{border-color:var(--shu);background:var(--danger-bg)}
+  .btn-diagnose{display:inline-flex;align-items:center;gap:var(--sp-1);font-size:12px;font-weight:600;color:#fff;white-space:nowrap;
+    background:var(--shu);border:1px solid var(--shu);border-radius:var(--r-control);padding:5px var(--sp-3);cursor:pointer;transition:background .14s;flex:none}
+  .btn-diagnose:hover:not(:disabled){background:var(--shu-dark)}
+  .btn-diagnose:disabled{opacity:.5;cursor:not-allowed;background:var(--surface-2);color:var(--muted);border-color:var(--line-strong)}
+  .auto-toggle{display:inline-flex;align-items:center;gap:6px;flex:none;cursor:pointer;font-size:var(--t-cap);color:var(--muted);margin-left:auto;white-space:nowrap;user-select:none}
+  @media(max-width:820px){.inject{flex-wrap:wrap;overflow:visible}.scn{flex-basis:100%;order:-1}.auto-toggle{margin-left:0}}
+  .auto-toggle input{position:absolute;opacity:0;width:0;height:0}
+  .ad-track{position:relative;width:30px;height:17px;border-radius:var(--r-pill);background:var(--line-strong);transition:background .14s;flex:none}
+  .ad-knob{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(28,28,28,.2);transition:transform .14s}
+  .auto-toggle input:checked + .ad-track{background:var(--shu)}
+  .auto-toggle input:checked + .ad-track .ad-knob{transform:translateX(13px)}
+  .auto-toggle input:focus-visible + .ad-track{outline:2px solid var(--shu);outline-offset:1px}
+  .auto-toggle .ad-lab{font-weight:600}
+
+  /* feed standby note */
+  .standby{font-size:var(--t-base);color:var(--muted);line-height:1.5;margin-bottom:var(--sp-3)}
+  .standby b{color:var(--sumi);font-weight:600}
+
+  /* reasoning feed lanes (the spine) */
+  .lane{border-top:1px solid var(--line)}
+  .lane:first-child{border-top:none}
+  .lane-h{display:flex;align-items:center;gap:var(--sp-2);width:100%;padding:var(--sp-2) 0;cursor:pointer;user-select:none;background:transparent;border:0;text-align:left}
+  .lane-node{width:18px;height:18px;border-radius:var(--r-pill);border:2px solid var(--line-strong);background:var(--surface-2);flex:none;display:flex;align-items:center;justify-content:center}
+  .lane-node .ic{color:var(--muted)}
+  .lane.done .lane-node{background:var(--sumi);border-color:var(--sumi)} .lane.done .lane-node .ic{color:var(--kinari)}
+  .lane.running .lane-node{border-color:var(--shu)}
+  .lane.pending{opacity:.6}
+  .lane-h .lab{font-size:var(--t-base);font-weight:600;color:var(--sumi)}
+  .lane-h .desc{font-size:var(--t-cap);color:var(--muted-2)}
+  .lane-h .rt{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2)}
+  .lane-h .ct{font-size:10px;color:var(--muted-2);font-variant-numeric:tabular-nums}
+  .lane-h .chev{color:var(--ash);transition:transform .15s;display:flex}
+  .lane.collapsed .chev{transform:rotate(-90deg)}
+  .lane.collapsed .lane-b{display:none}
+  .lane-b{padding:0 0 var(--sp-3) 26px;position:relative}
+  .lane-b::before{content:"";position:absolute;left:9px;top:0;bottom:var(--sp-3);width:2px;background:var(--line)}
+  .lane:last-child .lane-b::before{display:none}
+  .reason{background:var(--surface-3);border:1px solid var(--line);border-radius:var(--r-data);padding:var(--sp-2) var(--sp-3);
+    font-size:var(--t-base);line-height:1.55;color:var(--sumi);max-width:72ch;white-space:pre-wrap;overflow-wrap:anywhere}
+  .reason b{font-weight:600}
+  .reason.clamp{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+  .reason-more{font-size:var(--t-cap);color:var(--muted);background:none;border:0;cursor:pointer;padding:3px 0;font-weight:500}
+  .reason-note{font-size:var(--t-cap);color:var(--warn);margin-bottom:var(--sp-1);display:flex;align-items:center;gap:5px}
+  .concl{font-size:var(--t-base);font-weight:600;color:var(--sumi);line-height:1.5}
+  .concl .arrow{color:var(--muted);font-weight:400;font-size:var(--t-cap);margin-top:3px;display:block}
+  .tools{display:flex;flex-wrap:wrap;gap:5px;margin-top:var(--sp-2)}
+  .tool{font-family:var(--mono);font-size:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-data);padding:2px 6px;color:var(--muted)}
+  .tool.stub{border-style:dashed}
+  .emb{margin-top:var(--sp-2);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-data);padding:var(--sp-1) var(--sp-2)}
+  .emb .eh{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+  .emb .eh b{color:var(--shu-dark);font-variant-numeric:tabular-nums}
+  .emb svg{display:block;width:100%;height:30px;margin-top:2px}
+  .skel{height:9px;background:var(--line);border-radius:var(--r-data);margin-top:6px;opacity:.7}
+  .kb-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--warn);background:var(--warn-bg);
+    border:1px solid var(--warn-line);border-radius:var(--r-data);padding:0 5px;cursor:help}
+  .kb-badge.on{color:var(--info);background:var(--info-bg);border-color:#bcc6da}
+  .reason-note.ok{color:var(--info)}
+  .prog{height:3px;background:var(--surface-2);border-radius:var(--r-pill);overflow:hidden;margin:var(--sp-2) 0}
+  .prog i{display:block;height:100%;width:38%;background:var(--shu);border-radius:var(--r-pill);animation:indet 1.4s ease-in-out infinite}
+  @keyframes indet{0%{margin-left:-38%}100%{margin-left:100%}}
+  .spin{width:13px;height:13px;border:2px solid var(--line-strong);border-top-color:var(--shu);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* verdict */
+  .vc{border-left:3px solid var(--ok)} .vc.hitl{border-left-color:var(--shu)}
+  .vc-head{background:var(--surface-1);padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--line)}
+  .vc-head .rc{font-size:var(--t-base);font-weight:700;line-height:1.4}
+  .vc-cat{display:inline-flex;align-items:center;gap:3px;margin-top:5px;font-family:var(--mono);font-size:var(--t-cap);color:var(--muted);
+    background:var(--surface-3);border:1px solid var(--line);border-radius:var(--r-data);padding:1px var(--sp-2)}
+  .vc-b{padding:var(--sp-3)}
+  .rem{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+  .rem .lab{font-size:var(--t-cap);color:var(--muted)} .rem .val{font-size:var(--t-lg);font-weight:700;letter-spacing:-.4px}
+  .safety{display:inline-flex;align-items:center;gap:3px;font-size:var(--t-cap);font-weight:600;padding:2px var(--sp-2);border-radius:var(--r-data);margin-left:auto}
+  .safety.hitl{background:var(--warn-bg);color:var(--warn)} .safety.auto{background:var(--ok-bg);color:var(--ok)}
+  .conf{margin-top:var(--sp-2)}
+  .conf .lab{font-size:var(--t-cap);color:var(--muted);display:flex;justify-content:space-between}
+  .conf .lab b{font-variant-numeric:tabular-nums;color:var(--sumi)}
+  .conf .bar{height:6px;background:var(--surface-3);border-radius:var(--r-pill);overflow:hidden;margin-top:var(--sp-1)}
+  .conf .bar i{display:block;height:100%;border-radius:var(--r-pill);transition:width .45s ease}
+  .vmeta{display:flex;gap:var(--sp-4);flex-wrap:wrap;margin-top:var(--sp-2);padding-top:var(--sp-2);border-top:1px solid var(--line);font-size:var(--t-cap);color:var(--muted)}
+  .vmeta b{color:var(--sumi);font-weight:600;font-variant-numeric:tabular-nums}
+  .check{margin-top:var(--sp-2);font-size:var(--t-cap);color:var(--muted);display:flex;align-items:center;gap:var(--sp-1);flex-wrap:wrap}
+  .check b{color:var(--sumi)} .check .m{display:inline-flex;align-items:center;gap:3px;font-weight:600}
+  .check .m.ok{color:var(--ok)} .check .m.no{color:var(--danger)}
+  .vc-sec{margin-top:var(--sp-2);padding-top:var(--sp-2);border-top:1px solid var(--line)}
+  .vc-sec-h{display:flex;align-items:center;gap:var(--sp-1);font-size:var(--t-cap);font-weight:700;color:var(--muted-2);text-transform:none;margin-bottom:var(--sp-1)}
+  .vc-sec-note{font-weight:500;color:var(--ash);background:var(--surface-1);border:1px solid var(--line);border-radius:var(--r-pill);padding:0 6px;margin-left:auto}
+  .ev-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+  .ev-list li{display:flex;gap:var(--sp-2);align-items:baseline;font-size:var(--t-base);line-height:1.45}
+  .ev-list .ev-f{flex:1;color:var(--sumi)}
+  .ev-list .ev-s{flex:none;font-family:var(--mono);font-size:10px;color:var(--info);background:var(--info-bg);border-radius:var(--r-data);padding:1px 5px;white-space:nowrap}
+  .plan-list{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:3px;font-size:var(--t-base);line-height:1.45}
+  .plan-list li{color:var(--sumi)}
+  .plan-list li::marker{color:var(--shu);font-weight:700}
+  .approve-wrap{margin-top:var(--sp-2);display:flex;align-items:center;gap:var(--sp-2)}
+  .btn-approve{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);font-size:var(--t-base);font-weight:600;color:#fff;
+    background:var(--shu);border:1px solid var(--shu);border-radius:var(--r-control);padding:9px var(--sp-3);cursor:pointer;transition:background .14s}
+  .btn-approve:hover:not(:disabled){background:var(--shu-dark)} .btn-approve:disabled{opacity:.55;cursor:not-allowed}
+  .info-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex:none;color:var(--muted);
+    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-control);cursor:help;position:relative}
+  .info-btn .pop{display:none;position:absolute;right:0;bottom:calc(100% + 6px);width:220px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r-control);box-shadow:var(--sh-pop);padding:var(--sp-2);font-size:var(--t-cap);color:var(--muted);line-height:1.5;text-align:left;z-index:6}
+  .info-btn:hover .pop,.info-btn:focus .pop{display:block}
+  .vc-empty{padding:var(--sp-4) var(--sp-3);color:var(--muted);font-size:var(--t-base);display:flex;align-items:center;gap:var(--sp-2)}
+  .vc-empty .ic{color:var(--line-strong)}
+  .result{margin-top:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-control);font-size:var(--t-base);font-weight:500;display:flex;align-items:center;gap:var(--sp-2)}
+  .result.ok{background:var(--ok-bg);color:var(--ok)} .result.no{background:var(--danger-bg);color:var(--danger)}
+
+  /* timeline + info */
+  .tl{list-style:none;margin:0;padding:0}
+  .tl-empty{font-size:var(--t-base);color:var(--muted);display:flex;align-items:center;gap:var(--sp-2)}
+  .tl-item{display:grid;grid-template-columns:12px 1fr;gap:var(--sp-2);padding-bottom:var(--sp-2);position:relative}
+  .tl-item:not(:last-child)::after{content:"";position:absolute;left:5px;top:13px;bottom:0;width:1px;background:var(--line)}
+  .tl-dot{width:9px;height:9px;border-radius:var(--r-pill);margin-top:3px;background:var(--ash);outline:2px solid var(--surface-2)}
+  .tl-dot.detect{background:var(--shu)} .tl-dot.diagnose{background:var(--info)} .tl-dot.propose{background:var(--sumi)} .tl-dot.approve{background:var(--warn)} .tl-dot.recover{background:var(--ok)}
+  .tl-row{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-2)}
+  .tl-label{font-size:var(--t-base);font-weight:500;line-height:1.25} .tl-time{font-family:var(--mono);font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tl-sub{font-size:var(--t-cap);color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.25}
+  .info-grid{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-1) var(--sp-3);font-size:var(--t-cap)}
+  .info-grid dt{color:var(--muted)} .info-grid dd{margin:0;font-family:var(--mono);color:var(--sumi);font-variant-numeric:tabular-nums;text-align:right}
+
+  .err-banner{margin-top:var(--sp-2);padding:var(--sp-2) var(--sp-3);background:var(--danger-bg);color:var(--danger);border-radius:var(--r-control);font-size:var(--t-base);display:flex;align-items:center;gap:var(--sp-2)}
+  .err-banner button{margin-left:auto;font-size:var(--t-cap);font-weight:600;color:var(--danger);background:transparent;border:1px solid var(--danger-line);border-radius:var(--r-data);padding:3px var(--sp-2);cursor:pointer}
+  .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(8px);background:var(--sumi);color:var(--kinari);
+    padding:8px 14px;border-radius:var(--r-control);font-size:var(--t-base);box-shadow:var(--sh-pop);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  /* ---- コックピット・ページ（サービス/メトリクス/Runbook/履歴） ---- */
+  .page-hidden{display:none!important}
+  .page{grid-row:3;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:var(--sp-2)}
+  .page>.card{flex:none}
+  .page.fill{overflow:hidden}
+  .page-note{font-size:var(--t-cap);color:var(--ash);line-height:1.55}
+  .page-note b{color:var(--muted)}
+  .page-note code{font-family:var(--mono);font-size:11px;background:var(--surface-3);padding:0 4px;border-radius:3px}
+  .sec-cap{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--t-cap);font-weight:700;color:var(--muted-2);margin:var(--sp-3) 0 var(--sp-1)}
+  .sec-cap:first-child{margin-top:0}
+  .tag-impl{display:inline-flex;font-size:10px;font-weight:700;border-radius:var(--r-data);padding:1px 6px;background:var(--ok-bg);color:var(--ok)}
+  .tag-road{display:inline-flex;font-size:10px;font-weight:700;border-radius:var(--r-data);padding:1px 6px;background:var(--surface-3);color:var(--muted);border:1px solid var(--line)}
+  .kv-table{width:100%;border-collapse:collapse;font-size:var(--t-base)}
+  .kv-table th,.kv-table td{border-bottom:1px solid var(--line);padding:5px var(--sp-2);text-align:left;vertical-align:top}
+  .kv-table tr:last-child th,.kv-table tr:last-child td{border-bottom:none}
+  .kv-table th{color:var(--muted-2);font-size:var(--t-cap);font-weight:600;white-space:nowrap;width:1%}
+  .kv-table td{overflow-wrap:anywhere}
+  .raw-json{font-family:var(--mono);font-size:11px;line-height:1.5;background:var(--kinari);border:1px solid var(--line);border-radius:var(--r-data);padding:var(--sp-2);white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+  .kind-badge{display:inline-flex;font-size:10px;font-weight:600;border-radius:var(--r-data);padding:1px 6px;border:1px solid var(--line);color:var(--muted);background:var(--surface-3);flex:none}
+  .kind-badge.postmortem{color:var(--info);background:var(--info-bg);border-color:#bcc6da}
+  /* メトリクス */
+  .mchart{padding:var(--sp-2) 0}
+  .mchart+.mchart{border-top:1px solid var(--line)}
+  .mchart .mh{display:flex;align-items:baseline;gap:var(--sp-2);font-size:var(--t-base);flex-wrap:wrap}
+  .mchart .mh b{font-size:var(--t-md)}
+  .mchart .mh .mcur{margin-left:auto;font-family:var(--mono)}
+  .mchart .mh .mcur.bad{color:var(--shu-dark);font-weight:700}
+  .mchart svg{display:block;width:100%;height:120px;margin-top:var(--sp-1);background:var(--kinari);border:1px solid var(--line);border-radius:var(--r-data)}
+  .mchart .mx{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+  /* Runbook */
+  .kb-wrap{flex:1;min-height:0;display:grid;grid-template-columns:300px minmax(0,1fr);gap:var(--sp-2)}
+  @media(max-width:1040px){.kb-wrap{grid-template-columns:1fr;grid-template-rows:240px minmax(0,1fr)}}
+  .kb-item{display:flex;align-items:center;gap:var(--sp-2);width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);padding:var(--sp-2);cursor:pointer;font-size:var(--t-base);color:var(--sumi)}
+  .kb-item:hover{background:var(--hover)}
+  .kb-item.active{background:var(--surface-3)}
+  .kb-item .kt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .kb-item .ks{font-family:var(--mono);font-size:10px;color:var(--muted);flex:none}
+  .kb-search{display:flex;gap:var(--sp-1);padding:var(--sp-2);border-bottom:1px solid var(--line)}
+  .kb-search input{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--line-strong);border-radius:var(--r-control);font-size:var(--t-base);background:var(--surface-2);color:var(--sumi);font-family:inherit}
+  .kb-hit{display:block;width:100%;text-align:left;font-family:inherit;font-size:var(--t-base);color:var(--sumi);border:1px solid var(--line);border-radius:var(--r-data);padding:var(--sp-2);margin-top:var(--sp-2);cursor:pointer;background:var(--kinari)}
+  .kb-hit:hover{background:var(--hover)}
+  .kb-hit .kh{display:flex;align-items:center;gap:var(--sp-2);font-weight:600;font-size:var(--t-base)}
+  .kb-hit .score{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--info)}
+  .md h2{font-size:var(--t-md);margin:var(--sp-2) 0 var(--sp-1);border-bottom:1px solid var(--line);padding-bottom:3px}
+  .md h3{font-size:var(--t-base);margin:var(--sp-2) 0 var(--sp-1)}
+  .md h4{font-size:var(--t-base);margin:var(--sp-2) 0 var(--sp-1);color:var(--muted)}
+  .md p{margin:var(--sp-1) 0;line-height:1.6}
+  .md .md-li{margin:2px 0;padding-left:.5em;line-height:1.55}
+  .md code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:0 4px;border-radius:3px}
+  /* 履歴 */
+  .hist-table{width:100%;border-collapse:collapse;font-size:var(--t-base)}
+  .hist-table th,.hist-table td{border-bottom:1px solid var(--line);padding:6px var(--sp-2);text-align:left;vertical-align:top}
+  .hist-table th{font-size:var(--t-cap);color:var(--muted-2);font-weight:600;white-space:nowrap}
+  .hist-table td .sub2{font-size:var(--t-cap);color:var(--muted)}
+  .att{display:inline-flex;align-items:center;gap:3px;font-size:var(--t-cap);font-weight:600;border-radius:var(--r-data);padding:1px 6px;margin:1px 4px 1px 0}
+  .att.ok{background:var(--ok-bg);color:var(--ok)} .att.no{background:var(--danger-bg);color:var(--danger)}
+  .sum-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2)}
+  @media(max-width:820px){.sum-grid{grid-template-columns:repeat(2,1fr)}}
+  .sum-grid .sg{background:var(--kinari);border:1px solid var(--line);border-radius:var(--r-data);padding:var(--sp-2) var(--sp-3)}
+  .sum-grid .sg .k{font-size:var(--t-cap);color:var(--muted)}
+  .sum-grid .sg .v{font-size:var(--t-lg);font-weight:700;font-variant-numeric:tabular-nums}
+  /* ---- 江戸火消し：炎の演出・うだつ・対応表 ---- */
+  /* ---- 火事場シーン：body.kajiba=夜火事（実 fault 時のみ）／.shizume=熾火（うだつ後） ---- */
+  body,.sidebar,.topbar,.ribbon,.rib,.card,.nav-row,.rail,.main{transition:background-color .8s ease,border-color .8s ease,color .8s ease}
+  body.kajiba{
+    --kinari:#15131C; --surface-1:rgba(27,24,36,.6); --surface-2:rgba(32,28,42,.58); --surface-3:rgba(39,33,50,.62); --hover:rgba(46,40,60,.72);
+    --line:#332D40; --line-strong:#4A4259;
+    --sumi:#F0E9DB; --muted:#B7AC9A; --muted-2:#A89D8C; --ash:#9A9182;
+    --shu:#E25A3C; --shu-dark:#C4462E;
+    --ok:#9DBE8F; --ok-bg:#233022; --warn:#E3B45B; --warn-bg:#33290F; --warn-line:#5C4B22;
+    --danger:#F08D79; --danger-bg:#3B201B; --danger-line:#6E392E;
+    --info:#A3B3DC; --info-bg:#222A3E;
+    --sh-pop:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.55);
+  }
+  body.kajiba .btn-diagnose,body.kajiba .btn-approve,body.kajiba .unlock-btn,body.kajiba .fw-sev{color:#241511}
+  body.kajiba .sidebar{background-image:none}
+  #scene-fx{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity 1.1s ease}
+  body.kajiba #scene-fx{opacity:1}
+  #scene-fx .vignette{position:absolute;inset:0;animation:kaji-glow 3.2s ease-in-out infinite;background:
+    radial-gradient(120% 90% at 50% 112%, rgba(226,90,60,.26), rgba(226,90,60,.09) 42%, transparent 62%),
+    radial-gradient(140% 100% at 50% -20%, rgba(0,0,0,.34), transparent 55%)}
+  body.shizume #scene-fx .vignette{animation-duration:6.5s;background:
+    radial-gradient(120% 80% at 50% 112%, rgba(202,132,62,.15), transparent 55%),
+    radial-gradient(140% 100% at 50% -20%, rgba(0,0,0,.30), transparent 55%)}
+  @keyframes kaji-glow{0%,100%{opacity:.82}50%{opacity:1}}
+  #scene-fx .skyline{position:absolute;left:0;right:0;bottom:0;height:86px;opacity:.62;background-repeat:repeat-x;background-size:auto 100%;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 560 72'%3E%3Cpath d='M8 72V47Q10 38 24 33H88Q102 38 104 47V72ZM20 29H92V33H20ZM18 27h6v4h-6ZM88 27h6v4h-6ZM122 72V40Q122 34 128 31L138 26Q142 24 146 26L156 31Q162 34 162 40V72ZM132 22H152V26H132ZM180 72L190 16H193L187 72ZM214 72L204 16H201L208 72ZM183 60L207 36L209 39L185 63ZM211 60L187 36L185 39L209 63ZM186 46H208V48.5H186ZM177 16H217V19H177ZM175 16Q197 5 219 16ZM194 25a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0ZM196.4 19h1.2v4h-1.2ZM232 72V52Q233 45 244 42H280Q290 45 292 52V72ZM242 39H282V42H242ZM296 72V54Q297 47 308 44H340Q350 47 352 54V72ZM306 41H342V44H306ZM366 72V44Q368 35 384 30H436Q450 35 452 44V72ZM380 26H438V30H380ZM378 24h6v4h-6ZM434 24h6v4h-6ZM474 72V50H480V72ZM534 72V50H540V72ZM466 50Q507 42 548 50L546 54Q507 47 468 54ZM470 44Q507 36 544 44L540 47Q507 40 474 47Z' fill='%23000'/%3E%3C/svg%3E")}
+  #scene-fx .skyline-far{position:absolute;left:0;right:0;bottom:0;height:118px;opacity:.27;background-repeat:repeat-x;background-size:auto 100%;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 96'%3E%3Cpath d='M64.5 4h3v10h-3ZM46 22Q66 12 86 22L82 26H50ZM42 36Q66 27 90 36L86 40H46ZM38 50Q66 41 94 50L90 54H42ZM34 64Q66 55 98 64L94 68H38ZM30 78Q66 69 102 78L98 82H34ZM50 82H82L84 96H48ZM120 96V84L134 76H182L196 84V96ZM210 96V80L226 71H262L278 80V96ZM292 96V86L305 79H352L365 86V96ZM388 96L396 58H400L408 96ZM384 58H412V61H384ZM382 58Q398 50 414 58ZM430 96V82L444 74H492L506 82V96Z' fill='%23000'/%3E%3C/svg%3E")}
+  body.shizume #scene-fx .skyline{opacity:.4}
+  body.shizume #scene-fx .skyline-far{opacity:.14}
+  #scene-fx .embers{position:absolute;inset:0;overflow:hidden}
+  #scene-fx .embers i{position:absolute;left:calc(var(--x)*1%);bottom:-8px;width:5px;height:5px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #FFD9A0, #E25A3C 60%, transparent 78%);
+    opacity:0;transform:translate3d(0,0,0) scale(var(--s));will-change:transform,opacity;
+    animation:ember-rise var(--d) linear var(--dl) infinite}
+  body:not(.kajiba) #scene-fx .embers i{animation-play-state:paused}
+  body.shizume #scene-fx .embers i{animation-duration:calc(var(--d)*2.3)}
+  body.shizume #scene-fx .embers i:nth-child(n+6){display:none}
+  @keyframes ember-rise{0%{opacity:0;transform:translate3d(0,0,0) scale(var(--s))}8%{opacity:.9}60%{opacity:.5}100%{opacity:0;transform:translate3d(26px,-88vh,0) scale(calc(var(--s)*.45))}}
+  #stamp-chinka{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:120}
+  .stamp-big{font-family:var(--serif);font-weight:700;font-size:64px;color:#B8392C;border:5px solid #B8392C;border-radius:12px;
+    padding:8px 26px;letter-spacing:.22em;text-indent:.22em;background:rgba(253,251,247,.88);box-shadow:0 8px 32px rgba(28,28,28,.25);
+    transform:rotate(-8deg);opacity:0;animation:stamp-show 3.1s cubic-bezier(.2,1.4,.4,1) forwards}
+  @keyframes stamp-show{0%{opacity:0;transform:rotate(-8deg) scale(1.75)}12%{opacity:1;transform:rotate(-8deg) scale(1)}80%{opacity:1;transform:rotate(-8deg) scale(1)}100%{opacity:0;transform:rotate(-8deg) scale(1)}}
+  /* ---- HIKESHI 英字テイスト（ローマ字主表記） ---- */
+  .nav-row .rj{font-family:var(--serif);font-weight:700;font-size:12px;letter-spacing:.13em}
+  .brand .nm{letter-spacing:.16em}
+  @media(prefers-reduced-motion:reduce){
+    #scene-fx .vignette{animation:none}
+    #scene-fx .embers{display:none}
+    .stamp-big{animation:none;opacity:1}
+    body,.sidebar,.topbar,.ribbon,.rib,.card,.nav-row,.rail,.main{transition:none}
+  }
+  /* ---- 火消七役バー（各役割＝実機能への入口・状態は実測グローバルのみから導出） ---- */
+  #shichiyaku{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+  .sy{display:flex;flex-direction:row;align-items:center;gap:6px;height:30px;padding:0 10px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:var(--r-card);cursor:pointer;text-align:left;min-width:0;transition:background .15s,border-color .15s}
+  .sy:hover:not(:disabled){background:var(--hover)}
+  .sy:disabled{cursor:default;opacity:.5}
+  .sy .rj2{font-family:var(--serif);font-weight:700;font-size:11px;letter-spacing:.08em;color:var(--sumi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .sy .kj{display:none}
+  .sy .st2{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:600;color:var(--ash);white-space:nowrap;margin-left:auto;flex:none}
+  .sy .st2 .sdot{width:6px;height:6px;border-radius:50%;background:var(--ash);flex:none}
+  .sy.on .st2{color:var(--shu)} .sy.on .st2 .sdot{background:var(--shu)}
+  .sy.ok .st2{color:var(--ok)} .sy.ok .st2 .sdot{background:var(--ok)}
+  .sy.now{border-color:var(--shu);box-shadow:inset 0 0 0 1px var(--shu)}
+  body.kajiba .sy.now{animation:sy-glow 1.6s ease-in-out infinite}
+  @keyframes sy-glow{0%,100%{box-shadow:inset 0 0 0 1px var(--shu)}50%{box-shadow:inset 0 0 0 1px var(--shu),0 0 16px rgba(226,90,60,.4)}}
+  @media(max-width:1280px){.sy .st2 .sl{display:none}}
+  @media(max-width:1100px){.sy .kj{display:none}}
+  @media(max-width:820px){.sy{padding:0 6px;height:26px}.sy .rj2{font-size:9px;letter-spacing:.02em}.sy .st2{display:none}}
+  /* ---- ガラス（シーンが透ける）＋テーマ追従スクロールバー ---- */
+  .card,.rib,.sidebar,.topbar,.fw-panel,.unlock-card,.sy{backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+  :root{--sb:rgba(28,28,28,.30)}
+  body.kajiba{--sb:rgba(240,233,219,.28)}
+  *{scrollbar-width:thin;scrollbar-color:var(--sb) transparent}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-corner{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--sb);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+  /* ---- 出動演出（検知の瞬間・1.9秒・実検知のみで発火） ---- */
+  #shutsudo{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:130}
+  #shutsudo .sb-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;padding:22px 46px;border-radius:16px;background:radial-gradient(closest-side, rgba(21,17,26,.32), rgba(21,17,26,0));animation:sb-show 1.9s ease-out forwards}
+  #shutsudo .sb-main{font-family:var(--serif);font-weight:800;font-size:88px;letter-spacing:.3em;text-indent:.3em;color:#F4EFE6;
+    text-shadow:0 2px 24px rgba(226,90,60,.65),0 0 4px rgba(0,0,0,.5)}
+  #shutsudo .sb-sub{font-family:var(--serif);font-weight:700;font-size:18px;letter-spacing:.2em;color:#E8B26A}
+  @keyframes sb-show{0%{opacity:0;transform:scale(1.24)}12%{opacity:1;transform:scale(1)}72%{opacity:1}100%{opacity:0}}
+  /* ---- 鎮火の幕引き: 纏が上がる ---- */
+  .matoi-rise{display:block;color:#B8392C;filter:drop-shadow(0 4px 16px rgba(28,28,28,.3));
+    animation:matoi-rise 1.1s cubic-bezier(.2,1.2,.4,1) forwards;opacity:0;margin-bottom:8px}
+  @keyframes matoi-rise{0%{opacity:0;transform:translateY(46px)}35%{opacity:1}100%{opacity:1;transform:translateY(0)}}
+  #stamp-chinka{flex-direction:column}
+  /* ---- 火勢の実データ連動（homura=高エラー率のあいだ火の粉・明滅が強まる） ---- */
+  #scene-fx .embers i:nth-child(n+9){display:none}
+  body.homura #scene-fx .embers i:nth-child(n+9){display:block}
+  body.homura #scene-fx .vignette{animation-duration:2.1s}
+  @media(prefers-reduced-motion:reduce){#shutsudo .sb-wrap{animation:sb-show-static 1.9s linear forwards}.matoi-rise{animation:none;opacity:1}}
+  @keyframes sb-show-static{0%{opacity:1}85%{opacity:1}100%{opacity:0}}
+  /* ---- 開幕: 幕開け演出（セッション初回のみ・reduced-motion では出さない） ---- */
+  #intro{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;background:#F4EFE6}
+  body.intro-play #intro{animation:intro-lift .65s cubic-bezier(.7,0,.3,1) 1.3s forwards}
+  #intro .in-inner{display:flex;flex-direction:column;align-items:center;gap:10px}
+  body.intro-play .in-mark{animation:in-rise .55s cubic-bezier(.2,1.1,.4,1) both}
+  body.intro-play .in-word{font-family:var(--serif);font-weight:700;font-size:44px;letter-spacing:.34em;text-indent:.34em;color:#1C1C1C;
+    animation:in-word .7s ease-out .12s both}
+  body.intro-play .in-sub{font-family:var(--serif);font-size:14px;letter-spacing:.18em;color:#8A8172;animation:in-word .7s ease-out .3s both}
+  body:not(.intro-play) #intro{display:none}
+  .in-word{font-family:var(--serif);font-weight:700;font-size:44px;letter-spacing:.34em;text-indent:.34em;color:#1C1C1C}
+  .in-sub{font-family:var(--serif);font-size:14px;letter-spacing:.18em;color:#8A8172}
+  @keyframes intro-lift{to{transform:translateY(-101%)}}
+  @keyframes in-rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes in-word{from{opacity:0;letter-spacing:.5em}to{opacity:1}}
+  /* 開幕に合わせて中身が順に立ち上がる（intro再生時のみ） */
+  body.intro-play .sidebar{animation:in-up .5s ease-out 1.35s both}
+  body.intro-play .topbar{animation:in-up .5s ease-out 1.42s both}
+  body.intro-play .ribbon{animation:in-up .5s ease-out 1.49s both}
+  body.intro-play #shichiyaku{animation:in-up .5s ease-out 1.56s both}
+  body.intro-play .work,body.intro-play .page{animation:in-up .5s ease-out 1.63s both}
+  @keyframes in-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @media(prefers-reduced-motion:reduce){#intro{display:none!important}
+    body.intro-play .sidebar,body.intro-play .topbar,body.intro-play .ribbon,body.intro-play #shichiyaku,body.intro-play .work,body.intro-play .page{animation:none}}
+  /* ---- モバイル: 七役ピルは省略せず横スクロール ---- */
+  @media(max-width:560px){
+    #shichiyaku{display:flex;overflow-x:auto;gap:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    #shichiyaku::-webkit-scrollbar{display:none}
+    .sy{flex:0 0 auto;width:auto}
+    .sy .rj2{overflow:visible;text-overflow:clip;font-size:10px}
+  }
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .nav-row.ringing{position:relative}
+  .nav-row.ringing svg.ic{transform-origin:50% 20%;animation:hansho-swing 1.6s cubic-bezier(.36,.07,.19,.97) both;color:var(--shu)}
+  .nav-row.ringing::after{content:"";position:absolute;left:9px;top:50%;width:22px;height:22px;transform:translateY(-50%);border-radius:50%;
+    border:1.5px solid var(--shu);opacity:0;animation:hansho-wave 1.6s ease-out 2}
+  @keyframes hansho-swing{0%{transform:rotate(0)}8%{transform:rotate(16deg)}22%{transform:rotate(-13deg)}36%{transform:rotate(9deg)}50%{transform:rotate(-6deg)}64%{transform:rotate(3deg)}100%{transform:rotate(0)}}
+  @keyframes hansho-wave{0%{opacity:.5;transform:translateY(-50%) scale(.4)}100%{opacity:0;transform:translateY(-50%) scale(1.9)}}
+  @media(prefers-reduced-motion:reduce){.nav-row.ringing svg.ic{animation:none}.nav-row.ringing::after{animation:none}}
+  .flame-wrap{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;position:relative}
+  .flame-wrap svg{display:block;overflow:visible}
+  .flame-fire{color:var(--shu);transform-origin:50% 100%;animation:flicker 1.1s ease-in-out infinite}
+  .flame-wrap.calm .flame-fire{color:var(--warn);transform:scale(.62);animation:flicker 2.4s ease-in-out infinite}
+  @keyframes flicker{0%,100%{transform:scale(1) rotate(0deg)}30%{transform:scale(1.08) rotate(-2deg)}60%{transform:scale(.94) rotate(2deg)}}
+  .flame-wrap.calm .flame-fire{animation-name:flicker-calm}
+  @keyframes flicker-calm{0%,100%{transform:scale(.62)}50%{transform:scale(.56)}}
+  .douse{display:inline-flex;align-items:center;gap:4px;color:var(--muted);animation:douse-fade 2.4s ease-out forwards}
+  .douse .smoke{color:var(--ash);animation:smoke-up 1.2s ease-out forwards}
+  .douse .matoi{color:var(--shu);opacity:0;animation:matoi-in .6s ease-out .9s forwards}
+  @keyframes smoke-up{0%{opacity:.9;transform:translateY(2px) scale(.8)}100%{opacity:0;transform:translateY(-8px) scale(1.25)}}
+  @keyframes matoi-in{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+  @keyframes douse-fade{0%,80%{opacity:1}100%{opacity:0}}
+  @media(prefers-reduced-motion:reduce){.douse .matoi{opacity:1}.douse .smoke{opacity:0}}
+  .contained-badge{display:inline-flex;align-items:center;gap:3px;font-size:var(--t-cap);font-weight:600;padding:2px var(--sp-2);
+    border-radius:var(--r-data);background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+  .btn-tataki{display:inline-flex;align-items:center;gap:var(--sp-1);font-size:12px;font-weight:600;color:var(--warn);white-space:nowrap;
+    background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:var(--r-control);padding:5px var(--sp-3);cursor:pointer;transition:background .14s;flex:none}
+  .btn-tataki:hover:not(:disabled){filter:brightness(.96);border-color:var(--warn)}
+  .btn-tataki:disabled{opacity:.5;cursor:not-allowed}
+  .att.contain{background:var(--warn-bg);color:var(--warn)}
+  .tl-dot.contain{background:var(--warn)}
+  .edo-map summary{cursor:pointer;font-size:var(--t-base);font-weight:600;color:var(--muted);display:flex;align-items:center;gap:var(--sp-1)}
+  .edo-map summary::-webkit-details-marker{display:none}
+  .edo-map[open] summary{margin-bottom:var(--sp-2)}
+  .edo-table{width:100%;border-collapse:collapse;font-size:var(--t-cap)}
+  .edo-table th,.edo-table td{border-bottom:1px solid var(--line);padding:4px var(--sp-1);text-align:left;vertical-align:top}
+  .edo-table th{color:var(--muted-2);font-weight:600;white-space:nowrap}
+  .edo-table td b{font-family:var(--serif)}
+  .edo-note{font-size:10px;color:var(--ash);margin-top:var(--sp-1);line-height:1.5}
+  .dmg-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2);margin-bottom:var(--sp-2)}
+  @media(max-width:820px){.dmg-grid{grid-template-columns:repeat(2,1fr)}}
+  .dmg-grid .sg{background:var(--kinari);border:1px solid var(--line);border-radius:var(--r-data);padding:var(--sp-2) var(--sp-3)}
+  .dmg-grid .sg .k{font-size:var(--t-cap);color:var(--muted)}
+  .dmg-grid .sg .v{font-size:var(--t-lg);font-weight:700;font-variant-numeric:tabular-nums}
+  .dmg-grid .sg .v.bad{color:var(--shu-dark)}
+  .exec-sum{font-family:var(--mono);font-size:11px;line-height:1.6;background:var(--kinari);border:1px solid var(--line);border-radius:var(--r-data);padding:var(--sp-2);white-space:pre-wrap;overflow-wrap:anywhere;margin:var(--sp-1) 0 0}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="intro" aria-hidden="true"><div class="in-inner"><span class="in-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="72" height="72"><rect x="47" y="60" width="6" height="26" rx="3" fill="#1C1C1C"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-42 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-31.5 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-21 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-10.5 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(0 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(10.5 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(21 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(31.5 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(42 50 37)"></rect><rect x="40" y="33" width="20" height="5" rx="2.5" fill="#1C1C1C"></rect><rect x="37" y="7" width="26" height="26" rx="3" transform="rotate(45 50 20)" fill="none" stroke="#B8392C" stroke-width="5" stroke-linejoin="round"></rect><rect x="44.54" y="14.54" width="10.92" height="10.92" rx="2" transform="rotate(45 50 20)" fill="#B8392C"></rect></svg></span><span class="in-word">HIKESHI</span><span class="in-sub">江戸火消し流 運用コンソール</span></div></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="24" height="24"><rect x="47" y="60" width="6" height="26" rx="3" fill="#1C1C1C"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-42 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-31.5 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-21 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-10.5 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(10.5 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(21 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(31.5 50 37)"></rect><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(42 50 37)"></rect><rect x="40" y="33" width="20" height="5" rx="2.5" fill="#1C1C1C"></rect><rect x="37" y="7" width="26" height="26" rx="3" transform="rotate(45 50 20)" fill="none" stroke="#B8392C" stroke-width="5" stroke-linejoin="round"></rect><rect x="44.54" y="14.54" width="10.92" height="10.92" rx="2" transform="rotate(45 50 20)" fill="#B8392C"></rect></svg></span>
+      <div><div class="nm">HIKESHI</div></div>
+    </div>
+    <div class="nav-cap">運用</div>
+    <nav id="nav"></nav>
+    <div class="nav-cap">監視対象（デモ）</div>
+    <div class="svc" id="svc"></div>
+    <div class="sb-foot"><span class="avatar">OC</span><div class="who"><b>on-call</b><br><span>当番（デモ表示）</span></div></div>
+  </aside>
+
+  <header class="topbar">
+    <div class="crumb"><b id="crumb-root">SHOKA 消火</b><span class="sep">/</span><span class="iid" id="iid">待機中</span>
+      <span class="tb-cat" id="tb-cat" style="display:none"></span></div>
+    <span class="spacer"></span>
+    <span class="kv"><span class="k">経過</span><span class="v" id="b-elapsed">–</span></span>
+    <span class="kv"><span class="k">rev</span><span class="v" id="b-rev">–</span></span>
+    <span class="kv" title="検知→復旧の操作時間（人の承認待ちを含む・エージェント単体のMTTRではない・ポーリング分解能 2.5s）。サーバ実測の注入→復旧は「履歴」ページ"><span class="k">検知→復旧</span><span class="v" id="b-mttr">–</span></span>
+    <span class="clock num" id="clock">--:--:--</span>
+    <span id="conn" class="pill" aria-live="polite"><span class="dot"></span><span class="t">接続確認中</span></span>
+    <button class="btn-ghost" id="page-oncall" aria-label="当番を呼ぶ"><span class="ico" data-ic="user"></span><span class="lbl">当番を呼ぶ</span></button>
+  </header>
+
+  <main class="main">
+    <section class="ribbon" id="ribbon"></section>
+      <section id="shichiyaku" aria-label="火消七役 — 発見から予防までの7機能"></section>
+    <div class="work" id="workmain">
+      <section class="card scroll" id="feedcard">
+        <div class="card-h"><span class="ico" data-ic="search"></span><span class="t">Hikeshi 調査ログ</span><span class="hint" id="feed-meta"></span></div>
+        <div class="card-b" id="feed"></div>
+      </section>
+      <aside class="rail">
+        <section class="card vc-card">
+          <div class="card-h"><span class="ico" data-ic="shield"></span><span class="t">判定と承認（HITL）</span></div>
+          <div id="verdict" aria-live="polite"></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><span class="ico" data-ic="history"></span><span class="t">タイムライン</span></div>
+          <div class="card-b"><ol class="tl" id="timeline"></ol></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><span class="ico" data-ic="info"></span><span class="t">インシデント情報</span></div>
+          <div class="card-b"><dl class="info-grid" id="info"></dl></div>
+        </section>
+        <section class="card">
+          <div class="card-b" style="padding:var(--sp-2) var(--sp-3)">
+            <details class="edo-map">
+              <summary><span class="ico" data-ic="flame"></span>江戸火消し × HIKESHI 対応表</summary>
+              <table class="edo-table">
+                <thead><tr><th>役割</th><th>江戸の火消し</th><th>Hikeshi</th></tr></thead>
+                <tbody>
+                  <tr><td>発見・監視</td><td><b>火の見櫓</b></td><td>火の見櫓ページ（メトリクス実ポーリング）</td></tr>
+                  <tr><td>知らせる</td><td><b>半鐘</b></td><td>半鐘ページ（被害状況・影響範囲）</td></tr>
+                  <tr><td>調査</td><td><b>見番</b></td><td>見番フェーズ（ログ/メトリクス/トレース調査）</td></tr>
+                  <tr><td>封じ込め</td><td><b>うだつ</b>（防火袖壁）</td><td>うだつボタン＝延焼防止（隔離）</td></tr>
+                  <tr><td>復旧</td><td><b>消火</b></td><td>消火ページ（診断→HITL承認→復旧）</td></tr>
+                  <tr><td>学習</td><td><b>火元</b></td><td>火元帳ページ（KB・ポストモーテム）＋火元改めフェーズ（KB検索）</td></tr>
+                  <tr><td>予防</td><td><b>火の用心</b></td><td>依存ライブラリの脆弱性スキャン（OSV）</td></tr>
+                  <tr><td>予防（巡回）</td><td><b>夜回り</b></td><td>CISA KEV・GitHub Advisory を定期取得して火元帳に蓄える</td></tr>
+                </tbody>
+              </table>
+              <div class="edo-note">江戸の町火消しは、まず延焼を止め（うだつ）、消し口を切って消し止め、火元を改めて再発を防いだ。Hikeshi のインシデント対応もこの流れをなぞっている。</div>
+            </details>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- コックピット・ページ（ビュー切替＝可視性トグルのみ・既存DOMは unmount しない） -->
+    <section class="page page-hidden" data-view="services" id="pg-services">
+      <section class="card">
+        <div class="card-h"><span class="ico" data-ic="siren"></span><span class="t">半鐘 — 被害状況・影響範囲（実ポーリング値）</span><span class="hint" id="dmg-hint"></span></div>
+        <div class="card-b" id="svc-damage"><div class="page-note">読み込み中…</div></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><span class="ico" data-ic="server"></span><span class="t">サービス: hikeshi-demo</span><span class="hint" id="svc-hint"></span></div>
+        <div class="card-b" id="svc-overview"></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><span class="ico" data-ic="activity"></span><span class="t">エージェントの入力 — シグナル契約（§5.1）</span><span class="hint">純関数 signals_from_demo()</span></div>
+        <div class="card-b" id="svc-signals"></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><span class="ico" data-ic="shield"></span><span class="t">安全境界とロードマップ</span></div>
+        <div class="card-b" id="svc-policy"></div>
+      </section>
+    </section>
+
+    <section class="page page-hidden" data-view="metrics" id="pg-metrics">
+      <section class="card">
+        <div class="card-h"><span class="ico" data-ic="chart"></span><span class="t">火の見櫓 — メトリクス（実ポーリング値）</span><span class="hint" id="met-hint"></span></div>
+        <div class="card-b" id="met-body"></div>
+      </section>
+    </section>
+
+    <section class="page page-hidden fill" data-view="runbook" id="pg-runbook">
+      <div class="kb-wrap">
+        <section class="card scroll">
+          <div class="card-h"><span class="ico" data-ic="book"></span><span class="t">火元帳 — KB（エージェントの検索対象）</span><span class="hint" id="kb-hint"></span></div>
+          <div class="card-b" id="kb-list" style="padding:0"></div>
+        </section>
+        <section class="card scroll">
+          <div class="card-h"><span class="ico" data-ic="search"></span><span class="t" id="kb-doc-title">Doc / 検索</span></div>
+          <div class="card-b" id="kb-view"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="page page-hidden" data-view="history" id="pg-history">
+      <section class="card">
+        <div class="card-h"><span class="ico" data-ic="history"></span><span class="t">火事場帳 — 履歴（セッション内の実記録台帳）</span><span class="hint" id="hist-hint"></span></div>
+        <div class="card-b" id="hist-body"></div>
+      </section>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+const ICONS={
+  flame:'<path d="M12 3c2 3 1 5 3 7s2 6-3 9-8-3-5-8c1 2 2 1 2-1 0-2-1-4 3-7Z"/>',
+  siren:'<path d="M10.6 3.4a1.4 1.4 0 0 1 2.8 0"/><path d="M12 3.4V6"/><path d="M7.6 18v-5.6C7.6 9.4 9.5 6 12 6s4.4 3.4 4.4 6.4V18"/><line x1="5.6" y1="18.2" x2="18.4" y2="18.2"/><path d="M10.4 20a1.6 1.6 0 0 0 3.2 0"/>',
+  server:'<rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><line x1="7" y1="7.5" x2="7.01" y2="7.5"/><line x1="7" y1="16.5" x2="7.01" y2="16.5"/>',
+  chart:'<line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="18" y1="20" x2="18" y2="14"/>',
+  book:'<path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2Z"/><line x1="9" y1="8" x2="15" y2="8"/>',
+  history:'<path d="M3.5 13a8.5 8.5 0 1 0 3-7"/><polyline points="3 4 3 9 8 9"/><polyline points="12 8 12 12 15 14"/>',
+  search:'<circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>',
+  activity:'<polyline points="2 12 6 12 9 4 15 20 18 12 22 12"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>',
+  cpu:'<rect x="7" y="7" width="10" height="10" rx="1.5"/><rect x="10" y="10" width="4" height="4"/><line x1="10" y1="3" x2="10" y2="5"/><line x1="14" y1="3" x2="14" y2="5"/><line x1="10" y1="19" x2="10" y2="21"/><line x1="14" y1="19" x2="14" y2="21"/><line x1="3" y1="10" x2="5" y2="10"/><line x1="3" y1="14" x2="5" y2="14"/><line x1="19" y1="10" x2="21" y2="10"/><line x1="19" y1="14" x2="21" y2="14"/>',
+  alert:'<path d="M12 3 22 20H2Z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  database:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3 3 7 3s7-1.3 7-3V6"/><path d="M5 12c0 1.7 3 3 7 3s7-1.3 7-3"/>',
+  shield:'<path d="M12 3 19 6v5c0 4-3 7-7 9-4-2-7-5-7-9V6Z"/><polyline points="9 12 11.3 14.3 15.5 9.5"/>',
+  check:'<polyline points="4 12 9.5 17.5 20 6"/>',
+  x:'<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+  flag:'<line x1="5" y1="3" x2="5" y2="21"/><path d="M5 4h13l-3 4 3 4H5Z"/>',
+  info:'<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  chevdown:'<polyline points="6 9 12 15 18 9"/>',
+  matoi:'<line x1="12" y1="9" x2="12" y2="21"/><circle cx="12" cy="6" r="2.6"/><path d="M7 10c1.5 2.5 8.5 2.5 10 0"/>',
+  smoke:'<path d="M9 19c-2-2-1-4 0-5.5S10 10 9 8"/><path d="M14 19c-2-2-1-4 0-5.5S15 10 14 8"/>',
+  tataki:'<path d="M4 20 14 10"/><rect x="12" y="3" width="8" height="8" rx="1.5" transform="rotate(45 16 7)"/>',
+};
+function svgIcon(name,sz){sz=sz||16;return `<svg class="ic" width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]||''}</svg>`;}
+function paintIcons(root){(root||document).querySelectorAll('[data-ic]').forEach(e=>{e.innerHTML=svgIcon(e.dataset.ic,+e.dataset.sz||16);e.removeAttribute('data-ic');});}
+
+const COL_DAY={ink:'#6B6253',shu:'#B8392C',line:'#E0D8C6',lineStrong:'#CFC2AA',danger:'#8E2B21',warn:'#946212'};
+const COL_KAJIBA={ink:'#A99E8C',shu:'#E25A3C',line:'#3A3448',lineStrong:'#5A5170',danger:'#F08D79',warn:'#E3B45B'};
+// 火事場シーンでチャート色も夜仕様に（描画は毎ポーリング再実行＝シーン切替に自然追従）
+const COL=new Proxy({},{get:(_,k)=>(document.body.classList.contains('kajiba')?COL_KAJIBA:COL_DAY)[k]});
+const CAT={deploy_regression:"デプロイ起因",config_error:"設定誤り",resource_exhaustion:"リソース枯渇",dependency_failure:"外部依存障害",data_cache_issue:"データ/キャッシュ不整合"};
+const REM={rollback:"ロールバック",runbook_mitigation:"Runbook 緩和策",scale:"スケール増強",config_fix:"設定修正",cache_flush:"キャッシュフラッシュ",code_fix:"コード修正"};
+const PHASES={
+  triage:{label:"MITATE 見立て",desc:"重大度・影響範囲",icon:"alert",rk:"triage"},
+  investigate:{label:"MIBAN 見番",desc:"ログ/メトリクス/トレース横断",icon:"search",rk:"investigation"},
+  rag:{label:"ARATAME 火元改め",desc:"RAG — Runbook・過去事例",icon:"database",rk:"evidence",stub:true},
+  remediate:{label:"KESHIGUCHI 消し口",desc:"根本原因と対処の確定",icon:"shield"}};
+const PHASE_ORDER=["triage","investigate","rag","remediate"];
+const METRICS=[
+  {key:"error_rate",id:"error_rate",label:"エラー率",get:m=>m.error_rate,fmt:v=>(v*100).toFixed(2)+"%",thresh:0.02,baseline:0.002},
+  {key:"latency",id:"latency_p95_ms",label:"p95",get:m=>m.latency_p95_ms,fmt:v=>Math.round(v)+"ms",thresh:800,baseline:180},
+  {key:"memory",id:"memory_pct",label:"メモリ",get:m=>m.memory_pct,fmt:v=>Math.round(v)+"%",thresh:85,baseline:45},
+];
+const NAV=[
+  {ic:"flame",rj:"SHOKA",label:"消火",sub:"インシデント",view:"incident"},
+  {ic:"siren",rj:"HANSHO",label:"半鐘",sub:"被害状況",view:"services"},
+  {ic:"chart",rj:"MIYAGURA",label:"火の見櫓",sub:"メトリクス",view:"metrics"},
+  {ic:"book",rj:"HIMOTO",label:"火元帳",sub:"Runbook",view:"runbook"},
+  {ic:"history",rj:"KAJIBA",label:"火事場帳",sub:"履歴",view:"history"}];
+const VIEWS={incident:"SHOKA 消火",services:"HANSHO 半鐘",metrics:"MIYAGURA 火の見櫓",runbook:"HIMOTO 火元帳",history:"KAJIBA 火事場帳"};
+const CAP=60;
+
+const $=s=>document.querySelector(s);
+const esc=s=>(s==null?"":""+s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hms=ts=>{const d=new Date(ts);const p=n=>String(n).padStart(2,"0");return p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());};
+
+let busy=false,activeExpect=null,lastFault=null,incidentStart=null,lastMttr=null,hasDiag=false,kbConnected=true;
+let _pendingReset=false,notifying=false,containing=false,_douseTimer=null;
+let lastContained=false;   // うだつ（延焼防止・隔離）状態＝demo /metrics の contained をそのまま反映
+let VIEW="incident";        // 現在のビュー（showView が唯一の切替入口）
+let serverInc=null;         // 採番の単一の出所＝サーバ台帳（/api/status の incident）。無ければ採番しない。
+// fault がアクティブな間は台帳の最新行が同じ fault のときだけ採番を信じる（コンソール再起動や
+// console 外の注入で旧番号を新インシデントに再利用しない）。fault 無し＝直近行（レポート用）。
+const matchedInc=()=>(!lastFault||(serverInc&&serverInc.fault===lastFault))?serverInc:null;
+const incLabel=()=>{const i=matchedInc();return i?("INC-"+String(i.id).padStart(4,"0")):"INC-—";};
+const incKey=()=>{const i=matchedInc();return i?i.id:("f:"+(lastFault||"")+"@"+(incidentStart||0));};
+let autoDiag=false;const autoDiagnosedFor=new Set();  // アラート連動の自動診断（既定OFF・1インシデント1回）
+let collapsed={triage:false,investigate:false,rag:false,remediate:false};
+const hist={error_rate:[],latency:[],memory:[]};
+const events=[];
+
+let TOKEN=sessionStorage.getItem("hk_token")||"";
+async function api(path,opts){
+  opts=opts||{};
+  const headers=Object.assign({},opts.headers||{});
+  if(TOKEN)headers["Authorization"]="Bearer "+TOKEN;
+  const r=await fetch(path,Object.assign({},opts,{headers}));
+  if(r.status===401){showUnlock(!!TOKEN);throw new Error("認証が必要です");}
+  if(!r.ok){
+    const t=await r.text();let m=t;
+    try{const j=JSON.parse(t);if(j&&j.detail)m=typeof j.detail==="string"?j.detail:JSON.stringify(j.detail);}catch(_){}
+    throw new Error(m||(""+r.status));
+  }
+  return r.json();
+}
+
+/* ---------- access gate (shared-token unlock) ---------- */
+function ensureUnlockEl(){
+  if($("#unlock"))return;
+  const st=document.createElement("style");
+  st.textContent=`#unlock{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:var(--kinari)}
+  #unlock.show{display:flex}
+  .unlock-card{width:min(92vw,380px);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-card);padding:28px 28px 22px;box-shadow:var(--sh-pop)}
+  .unlock-brand{display:flex;align-items:center;gap:8px;color:var(--shu);font-weight:600;font-size:var(--t-md)}
+  .unlock-card h1{font-size:var(--t-lg);margin:14px 0 6px}
+  .unlock-sub{color:var(--muted);font-size:var(--t-base);margin:0 0 16px;line-height:1.5}
+  #unlock-form{display:flex;flex-direction:column;gap:10px}
+  #unlock-input{padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r-control);font-family:var(--mono);font-size:var(--t-md);background:var(--surface-2);color:var(--sumi)}
+  .unlock-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 12px;background:var(--shu);color:#fff;border:none;border-radius:var(--r-control);font-size:var(--t-md);font-weight:600;cursor:pointer}
+  .unlock-btn:hover{background:var(--shu-dark)}
+  .unlock-err{color:var(--danger);font-size:var(--t-base);min-height:1.2em;margin-top:8px}`;
+  document.head.appendChild(st);
+  const el=document.createElement("div");el.id="unlock";
+  el.innerHTML=`<div class="unlock-card" role="dialog" aria-modal="true" aria-labelledby="unlock-h">
+    <div class="unlock-brand">${svgIcon('flame',20)}<span>HIKESHI 運用コンソール</span></div>
+    <h1 id="unlock-h">アクセストークン</h1>
+    <p class="unlock-sub">このコンソールは保護されています。配布されたアクセストークンを入力してください。</p>
+    <form id="unlock-form" autocomplete="off">
+      <input id="unlock-input" type="password" autocomplete="off" spellcheck="false" placeholder="トークン" aria-label="アクセストークン" />
+      <button type="submit" class="unlock-btn">${svgIcon('shield',15)}<span>アンロック</span></button>
+    </form>
+    <div id="unlock-err" class="unlock-err" role="alert"></div>`;
+  document.body.appendChild(el);paintIcons(el);
+  el.querySelector("#unlock-form").addEventListener("submit",e=>{e.preventDefault();submitUnlock();});
+}
+function showUnlock(failed){
+  ensureUnlockEl();
+  const el=$("#unlock"),wasShown=el.classList.contains("show");
+  el.classList.add("show");
+  $("#unlock-err").textContent=failed?"トークンが正しくありません。":"";
+  // focus/select は「非表示→表示」の遷移時のみ。再入（2.5s ポーリングの 401）で
+  // 入力中トークンを select()→次打鍵で消す事故を防ぐ。
+  if(!wasShown){const inp=$("#unlock-input");if(inp){failed?inp.select():inp.focus();}}
+}
+function submitUnlock(){
+  const v=($("#unlock-input").value||"").trim();if(!v)return;
+  TOKEN=v;sessionStorage.setItem("hk_token",TOKEN);
+  $("#unlock").classList.remove("show");
+  poll();  // 再開（成功なら通常動作・失敗ならまた 401 → 再表示）
+}
+
+/* ---------- markdown-lite for agent reasoning prose ---------- */
+function fmtReason(t){
+  let h=esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  return h.split('\n').map(ln=>{
+    let s=ln.replace(/^\s*#{1,6}\s*/,'');
+    const m=s.match(/^\s*[*\-]\s+(.*)/); if(m) s='・'+m[1];
+    return s;
+  }).join('\n');
+}
+
+/* ---------- sparkline ---------- */
+function sparkSVG(data,thresh,W,H){
+  if(!data||!data.length)return'';
+  W=W||64;H=H||26;const pad=2,n=data.length,cur=data[n-1].v,over=cur>thresh;
+  const maxV=Math.max(thresh*1.35,Math.max(...data.map(d=>d.v)),1e-9)*1.06;
+  const x=i=>n<=1?W:(i/(n-1))*W,y=v=>H-pad-(v/maxV)*(H-2*pad);
+  const col=over?COL.shu:COL.ink;
+  // 1点しか無い間は線/面を描かない（観測していない時間帯にまたがる描画をしない）。
+  let body='';
+  if(n>1){
+    const line=data.map((d,i)=>x(i).toFixed(1)+","+y(d.v).toFixed(1)).join(" ");
+    const area=`M${x(0).toFixed(1)},${H} `+data.map((d,i)=>"L"+x(i).toFixed(1)+","+y(d.v).toFixed(1)).join(" ")+` L${x(n-1).toFixed(1)},${H}Z`;
+    body=`<path d="${area}" fill="${col}" fill-opacity="0.08"/>
+    <polyline points="${line}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+  }
+  return `<line x1="0" y1="${y(thresh).toFixed(1)}" x2="${W}" y2="${y(thresh).toFixed(1)}" stroke="${COL.lineStrong}" stroke-width="1" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/>
+    ${body}
+    <circle cx="${x(n-1).toFixed(1)}" cy="${y(cur).toFixed(1)}" r="1.6" fill="${col}"/>`;
+}
+
+/* ---------- static chrome ---------- */
+function buildChrome(){
+  $("#nav").innerHTML=NAV.map(n=>`<button class="nav-row${n.view==='incident'?' active':''}" data-view="${n.view}" aria-label="${n.rj} ${n.label}（${n.sub}）" title="${n.rj} ${n.label}（${n.sub}）"${n.view==='incident'?' aria-current="page"':''}>${svgIcon(n.ic)}<span class="rj">${n.rj}</span><span class="nv-sub">${n.label}</span></button>`).join("");
+  document.querySelectorAll("#nav .nav-row").forEach(b=>b.onclick=()=>showView(b.dataset.view));
+  $("#ribbon").innerHTML=`<div class="rib status" id="rib-status"><div class="meta"><span class="lab"><span class="dot" id="dot-status"></span>稼働状態</span><span class="val" id="val-status">–</span></div><span class="flame-wrap" id="flame-status" style="margin-left:auto" aria-hidden="true"></span></div>`
+    +METRICS.map(m=>`<div class="rib" id="rib-${m.key}"><div class="meta"><span class="lab"><span class="dot" id="dot-${m.key}"></span>${m.label}</span><span class="val num" id="val-${m.key}">–</span><span class="delta" id="delta-${m.key}"></span></div><svg class="spark" id="spark-${m.key}" viewBox="0 0 64 26" preserveAspectRatio="none" aria-hidden="true"></svg></div>`).join("");
+  buildShichiyaku();renderShichiyaku();
+  if(!$("#sr-live")){const d=document.createElement("div");d.id="sr-live";d.className="sr-only";d.setAttribute("role","status");d.setAttribute("aria-live","polite");document.body.appendChild(d);}
+  paintIcons();
+}
+
+/* ---------- 炎の演出（fault 中のみ・contained で鎮まり・復旧で一回きりの鎮火） ---------- */
+let _douseUntil=0;
+function douseFlame(){
+  const el=$("#flame-status");if(!el)return;
+  _douseUntil=Date.now()+2600;
+  el.className="flame-wrap";
+  el.innerHTML=`<span class="douse" title="鎮火"><span class="smoke">${svgIcon('smoke',15)}</span><span class="matoi">${svgIcon('matoi',16)}</span></span>`;
+  if(_douseTimer)clearTimeout(_douseTimer);
+  _douseTimer=setTimeout(()=>{const e2=$("#flame-status");if(e2&&Date.now()>=_douseUntil)e2.innerHTML="";},2700);
+}
+/* ---------- 開幕: 幕開け（セッション初回のみ・演出は視覚のみ＝機能に影響しない） ---------- */
+(function(){
+  const el=document.getElementById("intro");if(!el)return;
+  let seen=null;try{seen=sessionStorage.getItem("hk_intro");}catch(_){/* storage不可なら毎回再生 */}
+  if(seen||matchMedia("(prefers-reduced-motion: reduce)").matches){el.remove();return;}
+  try{sessionStorage.setItem("hk_intro","1");}catch(_){}
+  document.body.classList.add("intro-play");
+  setTimeout(()=>{el.remove();document.body.classList.remove("intro-play");},2050);
+})();
+
+/* ---------- 火消七役バー（発見→調査→影響共有→延焼防止→復旧→学習→予防が全てボタン） ---------- */
+const SHICHIYAKU=[
+  {k:'miyagura',rj:'MIYAGURA',kj:'火の見櫓・発見',act:()=>showView('metrics')},
+  {k:'miban',rj:'MIBAN',kj:'見番・調査',act:()=>{if(lastFault&&!busy&&!hasDiag){showView('incident');runDiagnose();}else showView('incident');}},
+  {k:'hansho',rj:'HANSHO',kj:'半鐘・被害共有',act:()=>showView('services')},
+  {k:'tataki',rj:'UDATSU',kj:'うだつ・延焼防止',act:()=>{if(lastFault&&!lastContained)runContain();}},
+  {k:'shoka',rj:'SHOKA',kj:'消火・承認復旧',act:()=>{showView('incident');const v=document.querySelector('.vc-card');if(v)v.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});}},
+  {k:'himoto',rj:'HIMOTO',kj:'火元・学習',act:()=>{showView('incident');const b=document.querySelector('.btn-pm');if(b)b.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});}},
+  {k:'yojin',rj:'YOJIN',kj:'用心・予防',act:()=>openFirewatch()},
+];
+function buildShichiyaku(){
+  const el=$("#shichiyaku");if(!el)return;
+  el.innerHTML=SHICHIYAKU.map(s=>`<button class="sy" id="sy-${s.k}" title="${s.kj}"><span class="rj2">${s.rj}</span><span class="kj">${s.kj}</span><span class="st2"><span class="sdot"></span><span class="sl">—</span></span></button>`).join("");
+  SHICHIYAKU.forEach(s=>{$("#sy-"+s.k).onclick=s.act;});
+}
+function renderShichiyaku(){
+  const el=$("#shichiyaku");if(!el||!el.children.length)return;
+  const fault=lastFault,cont=lastContained,rec=(!fault&&lastMttr!=null);
+  const set=(k,cls,label,dis)=>{const b=$("#sy-"+k);if(!b)return;
+    b.className="sy"+(cls?" "+cls:"");b.disabled=!!dis;b.querySelector(".sl").textContent=label;};
+  set('miyagura',fault?'on':'ok',fault?'火事を検知':'監視中',false);
+  set('miban',busy?'on now':(hasDiag?'ok':(fault?'now':'')),busy?'調査中':(hasDiag?'調査済':(fault?'実行できます':'待機')),!fault&&!hasDiag);
+  set('hansho',fault?'on now':'',fault?'被害を確認':'待機',false);
+  set('tataki',cont?'ok':(fault?'on now':''),cont?'延焼止':(fault?'実行できます':'待機'),!fault||cont);
+  set('shoka',rec?'ok':(hasDiag&&fault?'on now':''),rec?'鎮火':(hasDiag&&fault?'承認待ち':'待機'),!hasDiag&&!rec);
+  set('himoto',rec?'now':'',rec?'記録できます':'待機',!rec);
+  set('yojin','','いつでも',false);
+  SHICHIYAKU.forEach(s=>{const b=$("#sy-"+s.k);if(b)b.setAttribute("aria-label",s.kj+"。状態: "+((b.querySelector(".sl")||{}).textContent||""));});
+}
+
+/* ---------- 火事場シーン（実状態のみで駆動：fault=夜火事・contained=熾火・復旧=昼へ） ---------- */
+function ensureSceneFx(){
+  if($("#scene-fx"))return;
+  const fx=document.createElement("div");fx.id="scene-fx";fx.setAttribute("aria-hidden","true");
+  fx.innerHTML=`<div class="vignette"></div><div class="skyline-far"></div><div class="skyline"></div><div class="embers">${
+    Array.from({length:14},(_,i)=>`<i style="--x:${(i*7.31+3)%100};--d:${(5.5+(i%5)*1.8).toFixed(1)}s;--dl:${((i*0.93)%6).toFixed(1)}s;--s:${(0.55+((i*37)%50)/100).toFixed(2)}"></i>`).join("")}</div>`;
+  document.body.appendChild(fx);
+}
+function setScene(fault,contained,sev){
+  ensureSceneFx();
+  document.body.classList.toggle("kajiba",!!fault);
+  document.body.classList.toggle("shizume",!!(fault&&contained));
+  document.body.classList.toggle("homura",!!(fault&&!contained&&sev));  // 火勢＝実エラー率で強まる（演出も実データ駆動）
+}
+let _shutsudoTimer=null;
+function shutsudoBanner(label){
+  let s=$("#shutsudo");
+  if(!s){s=document.createElement("div");s.id="shutsudo";s.setAttribute("aria-hidden","true");document.body.appendChild(s);}
+  if(_shutsudoTimer)clearTimeout(_shutsudoTimer);
+  s.innerHTML=`<div class="sb-wrap"><span class="sb-main">出動</span><span class="sb-sub">${esc(label)}</span></div>`;
+  const live=$("#sr-live");if(live)live.textContent="障害を検知しました: "+label;
+  _shutsudoTimer=setTimeout(()=>{s.innerHTML="";},1900);
+}
+function ringHansho(){
+  const nav=document.querySelector('.nav-row[data-view="services"]');if(!nav)return;
+  nav.classList.remove("ringing");void nav.offsetWidth;nav.classList.add("ringing");
+  setTimeout(()=>nav.classList.remove("ringing"),1600);
+}
+let _stampTimer=null;
+function stampChinka(){
+  let s=$("#stamp-chinka");
+  if(!s){s=document.createElement("div");s.id="stamp-chinka";s.setAttribute("role","status");document.body.appendChild(s);}
+  if(_stampTimer)clearTimeout(_stampTimer);
+  s.innerHTML=`<span class="matoi-rise">${svgIcon('matoi',56)}</span><span class="stamp-big">鎮火</span>`;
+  _stampTimer=setTimeout(()=>{s.innerHTML="";},3300);
+}
+function renderFlame(fault,contained){
+  const el=$("#flame-status");if(!el)return;
+  if(fault){
+    _douseUntil=0;if(_douseTimer){clearTimeout(_douseTimer);_douseTimer=null;}
+    const cls="flame-wrap"+(contained?" calm":"");
+    if(el.className===cls&&el.querySelector(".flame-fire"))return;  // 再描画でアニメをリスタートしない
+    el.className=cls;
+    el.innerHTML=`<span class="flame-fire" title="${contained?"延焼止（隔離済み・完全復旧待ち）":"障害発生中"}">${svgIcon('flame',18)}</span>`;
+  }else if(Date.now()>=_douseUntil){el.className="flame-wrap";if(el.innerHTML)el.innerHTML="";}
+}
+
+function renderSvc(m,fault){
+  const over={};METRICS.forEach(s=>{over[s.key]=s.get(m)>s.thresh;});  // 閾値は METRICS が単一の出所
+  const cls=s=>s?"background:var(--danger)":"background:var(--ok)";
+  $("#svc").innerHTML=`
+    <div class="svc-row"><span class="dot" style="${cls(!!fault)}"></span><span class="nm2">hikeshi-demo</span>${(fault&&m.contained)?`<span class="contained-badge" title="うだつ（延焼防止）実施済み＝悪化は停止・完全復旧には正しい対処の承認が必要">延焼止</span>`:""}<span class="st">rev ${m.revision!=null?m.revision:"–"}</span></div>
+    <div class="svc-sub">
+      <div class="svc-row"><span class="dot" style="${cls(over.error_rate)}"></span>エラー率<span class="st num">${m.error_rate!=null?(m.error_rate*100).toFixed(1)+"%":"–"}</span></div>
+      <div class="svc-row"><span class="dot" style="${cls(over.latency)}"></span>レイテンシ<span class="st num">${m.latency_p95_ms!=null?m.latency_p95_ms+"ms":"–"}</span></div>
+      <div class="svc-row"><span class="dot" style="${cls(over.memory)}"></span>メモリ<span class="st num">${m.memory_pct!=null?m.memory_pct+"%":"–"}</span></div>
+    </div>`;
+}
+
+function renderInfo(m,fault){
+  $("#info").innerHTML=`
+    <dt>インシデント</dt><dd>${fault?incLabel():"—"}</dd>
+    <dt>分類</dt><dd>${fault?(CAT[fault]||fault):"—"}</dd>
+    <dt>サービス</dt><dd>hikeshi-demo</dd>
+    <dt>リビジョン</dt><dd>${m.revision!=null?m.revision:"–"}</dd>
+    <dt>当番</dt><dd>on-call（デモ表示）</dd>
+    <dt>延焼防止（うだつ）</dt><dd>${fault?(m.contained?"実施済み":"未実施"):"—"}</dd>
+    <dt>検知→復旧</dt><dd>${lastMttr!=null?lastMttr.toFixed(1)+"s":"—"}</dd>`;
+}
+
+/* ---------- inject + standby/feed ---------- */
+function injectBarHTML(scenarios){
+  return `<div class="inject"><span class="lab">障害注入</span><div class="scn">`
+    +scenarios.map(s=>`<button class="chip" data-key="${s.key}" title="症状: ${esc(s.symptom||"")}"><span class="cn">${svgIcon('alert',13)}${esc(s.label)}</span><span class="cs">症状: ${esc(s.symptom||"")}</span></button>`).join("")
+    +`</div><label class="auto-toggle" title="障害を検知したら自動で診断を開始（アラート連動・1インシデント1回）"><input type="checkbox" id="auto-diag"${autoDiag?" checked":""}><span class="ad-track"><span class="ad-knob"></span></span><span class="ad-lab">自動診断</span></label>`
+    +`<button id="tataki" class="btn-tataki" style="display:none" title="うだつ — 延焼防止・隔離。隣家への延焼を防ぐ町家の袖壁うだつのように、まず広がりを止めてから根治します＝診断より前でも実行できます。実行後は悪化が止まりますが火元は残ります＝完全復旧には正しい対処の承認が必要です。">${svgIcon('tataki',14)}<span>UDATSU うだつ</span></button>`
+    +`<button id="diagnose" class="btn-diagnose" disabled>${svgIcon('search',14)}<span>診断</span></button></div>`;
+}
+function wireInject(){
+  document.querySelectorAll('#feed .chip').forEach(b=>b.onclick=async()=>{
+    if(busy)return;b.disabled=true;
+    try{await api(`/api/inject/${b.dataset.key}`,{method:"POST"});resetDiag();await poll();}
+    catch(e){toast("注入に失敗: "+e.message);}finally{b.disabled=false;}
+  });
+  const d=$("#diagnose"); if(d) d.onclick=runDiagnose;
+  const tk=$("#tataki"); if(tk) tk.onclick=runContain;
+  const a=$("#auto-diag"); if(a) a.onchange=()=>{autoDiag=a.checked;if(autoDiag&&lastFault&&!hasDiag&&!busy)maybeAutoDiagnose();};
+}
+/* うだつ（延焼防止・隔離）: POST /api/contain。fault が残る＝完全復旧には正しい対処の承認が必要。 */
+async function runContain(){
+  if(containing)return;containing=true;
+  const b=$("#tataki");if(b)b.disabled=true;const sp=$("#sy-tataki");if(sp)sp.disabled=true;
+  try{
+    const r=await api("/api/contain",{method:"POST"});
+    lastContained=!!r.contained;
+    addEvent("うだつ（延焼防止）","悪化は停止・火元は残存","contain");
+    toast("延焼を止めました（contained）。完全復旧には診断→承認が必要です。");
+    await poll();
+  }catch(e){toast("うだつに失敗: "+e.message);}
+  finally{containing=false;const b2=$("#tataki");if(b2)b2.disabled=false;syncDiagnoseBtn();renderShichiyaku();}
+}
+// アラート連動：検知済みインシデントを1回だけ自動診断（コスト二重化防止・既定OFF）。
+function maybeAutoDiagnose(){
+  if(!autoDiag||busy||hasDiag||!lastFault)return;
+  if(autoDiagnosedFor.has(incKey()))return;
+  autoDiagnosedFor.add(incKey());
+  addEvent("自動診断を起動","アラート連動（検知→自動で調査開始）","diagnose");
+  runDiagnose();
+}
+
+function laneHTML(k,opts){
+  const ph=PHASES[k]||{label:k,desc:"",icon:"search"};const o=opts||{};
+  const node=o.status==='running'?`<span class="spin"></span>`:o.status==='done'?svgIcon('check',12):svgIcon(ph.icon,12);
+  const cls='lane '+(o.status==='done'?'done':o.status==='running'?'running':'pending')+(o.collapsed?' collapsed':'');
+  const stub=!!ph.stub;
+  const right=stub
+    ?(kbConnected
+      ? `<span class="kb-badge on" tabindex="0" aria-label="デモKB（合成サンプル・キーワード検索）から取得した参照。本番は Vector Search 2.0。" title="デモKB（合成サンプル・キーワード検索）から取得した参照に基づく。本番は Vector Search 2.0。">デモKB</span>`
+      : `<span class="kb-badge" tabindex="0" aria-label="KB未接続のプレースホルダ。" title="KB（Vector Search 2.0）接続は次段＝現在プレースホルダ。">KB未接続</span>`)
+    :(o.count?`<span class="ct">${o.count} ツール</span>`:'');
+  return `<div class="${cls}" data-lane="${k}">
+    <button class="lane-h" type="button" aria-expanded="${!o.collapsed}" onclick="toggleLane('${k}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLane('${k}')}">
+      <span class="lane-node">${node}</span><span class="lab">${esc(ph.label)}</span><span class="desc">${esc(ph.desc)}</span><span class="rt">${right}<span class="chev">${svgIcon('chevdown',15)}</span></span></button>
+    <div class="lane-b">${o.body||''}</div></div>`;
+}
+
+function reasonBlock(text,opts){
+  if(!text)return '';
+  const o=opts||{};const id='r'+Math.random().toString(36).slice(2,8);
+  const note=o.note?`<div class="reason-note ${o.noteCls||''}">${svgIcon('info',12)}${esc(o.note)}</div>`:'';
+  const long=text.length>240;
+  return `${note}<div class="reason${long?' clamp':''}" id="${id}">${fmtReason(text)}</div>`
+    +(long?`<button class="reason-more" onclick="(function(b){var r=document.getElementById('${id}');r.classList.toggle('clamp');b.textContent=r.classList.contains('clamp')?'すべて表示':'折りたたむ';})(this)">すべて表示</button>`:'');
+}
+function toolsBlock(tools,stub){
+  if(!tools||!tools.length)return '';
+  return `<div class="tools">`+tools.map(t=>`<span class="tool${stub?' stub':''}">${esc(t)}</span>`).join('')+`</div>`;
+}
+function embedSpark(){
+  let best=null,br=1;METRICS.forEach(s=>{const a=hist[s.key];if(a&&a.length){const r=a[a.length-1].v/s.thresh;if(r>br){br=r;best=s;}}});
+  if(!best)return'';const a=hist[best.key];
+  return `<div class="emb"><div class="eh"><span>${best.id}（閾値超過）</span><b>${best.fmt(a[a.length-1].v)}</b></div><svg viewBox="0 0 100 30" preserveAspectRatio="none">${sparkSVG(a,best.thresh,100,30)}</svg></div>`;
+}
+
+/* render the feed: data=null → standby/pending preview; data={detail,reasoning,v} → reasoning spine */
+function renderFeed(scenarios,data){
+  let html=injectBarHTML(scenarios||[]);
+  if(!data){
+    const fault=lastFault;
+    html+=`<div class="standby">${fault?'<b>障害を検知しました。</b>うだつで延焼を止めるか、診断を開始してください。':'<b>監視中 — インシデントなし。</b>'}</div>`;
+    html+=PHASE_ORDER.map(k=>laneHTML(k,{status:'pending',collapsed:false,body:''})).join('');
+  }else{
+    const {detail,reasoning,v}=data;
+    const byAgent={};(detail||[]).forEach(d=>{(byAgent[d.agent]=byAgent[d.agent]||[]).push(d.tool);});
+    const ddup=a=>[...new Set(a||[])];
+    html+=PHASE_ORDER.map(k=>{
+      const ph=PHASES[k];const tools=ddup(byAgent[k]);
+      let body='';
+      if(k==='remediate'){
+        body=`<div class="concl">${esc(v.root_cause_text||'')}<span class="arrow">→ 推奨対処は右の判定カードへ</span></div>`;
+      }else{
+        const rk=ph.rk;const text=reasoning?reasoning[rk]:'';
+        const note=k==='rag'?(kbConnected?'デモKB（合成・キーワード検索）から取得した参照に基づく（出典は本文「参照:」）。本番は Vector Search 2.0。':'KB未接続：以下はモデルの一般知識による参考（検索結果ではない）'):'';
+        body=reasonBlock(text,{note,noteCls:(k==='rag'&&kbConnected)?'ok':''});
+        if(k==='investigate')body+=embedSpark();
+        body+=toolsBlock(tools,k==='rag'&&!kbConnected);
+        if(k==='rag'&&!tools.length)body+=toolsBlock(['search_runbook','search_past_incidents','search_postmortem'],!kbConnected);
+      }
+      return laneHTML(k,{status:'done',collapsed:collapsed[k],count:tools.length,body});
+    }).join('');
+  }
+  $("#feed").innerHTML=html;
+  wireInject();
+  syncDiagnoseBtn();
+}
+function syncDiagnoseBtn(){
+  const d=$("#diagnose");if(d&&!busy){d.disabled=!lastFault;}
+  const tk=$("#tataki");if(tk)tk.style.display=(lastFault&&!lastContained)?"":"none";  // fault 中かつ未 contained のときだけ表示
+}
+function toggleLane(k){collapsed[k]=!collapsed[k];const el=document.querySelector(`.lane[data-lane="${k}"]`);if(el){el.classList.toggle("collapsed",collapsed[k]);const h=el.querySelector(".lane-h");if(h)h.setAttribute("aria-expanded",String(!collapsed[k]));}}
+function resetDiag(){hasDiag=false;activeExpect=null;LAST_VERDICT=null;_pendingReset=false;$("#verdict").innerHTML=verdictEmpty();$("#feed-meta").textContent="";renderFeed(LAST_SCN,null);}
+let LAST_SCN=[];let LAST_VERDICT=null;  // 直近診断の判定（障害レポート出力に使用）
+
+/* ---------- timeline ---------- */
+function addEvent(label,sub,kind){events.unshift({t:Date.now(),label,sub,kind});renderTimeline();}
+function renderTimeline(){
+  const el=$("#timeline");
+  if(!events.length){el.innerHTML=`<li class="tl-empty">${svgIcon('check')}本セッションのインシデント履歴なし</li>`;return;}
+  const base=events[events.length-1].t;
+  el.innerHTML=events.map(e=>`<li class="tl-item"><span class="tl-dot ${e.kind}"></span><div>
+    <div class="tl-row"><span class="tl-label">${esc(e.label)}</span><span class="tl-time">${hms(e.t)}</span></div>
+    <div class="tl-sub">${esc(e.sub||"")}${e.t!==base?` · +${((e.t-base)/1000).toFixed(1)}s`:""}</div></div></li>`).join("");
+}
+
+/* ---------- status poll ---------- */
+function setConn(ok){const p=$("#conn");p.className="pill "+(ok?"ok":"down");p.querySelector(".t").textContent=ok?`demo 接続中 · ${hms(Date.now()).slice(0,5)}`:"demo 未接続";}
+async function poll(){
+  let st;try{st=await api("/api/status");}catch(e){setConn(false);return;}
+  setConn(st.demo_ok);
+  if((st.scenarios||[]).length&&!LAST_SCN.length){LAST_SCN=st.scenarios;renderFeed(LAST_SCN,null);renderTimeline();}
+  if(!st.demo_ok){$("#iid").textContent="demo 未起動";
+    document.querySelectorAll('#feed .chip').forEach(c=>c.disabled=true);
+    const db=$("#diagnose");if(db)db.disabled=true;
+    const tb=$("#tataki");if(tb)tb.style.display="none";
+    if(VIEW==="services")refreshServiceLive();return;}
+  serverInc=st.incident||null;  // 採番＝サーバ台帳（クライアントで数えない）
+  const m=st.metrics||{},fault=m.fault_active||(st.state||{}).fault;
+  const contained=!!m.contained;  // うだつ状態＝demo 実測（表示はサーバ値のみ）
+  if(_pendingReset&&!busy)resetDiag();  // ストリーム中に検知した別障害の後追いリセット
+  if(fault&&fault!==lastFault){if(busy){_pendingReset=true;}else if(hasDiag){resetDiag();}incidentStart=Date.now();addEvent("障害検知",CAT[fault]||fault,"detect");shutsudoBanner(CAT[fault]||fault);ringHansho();}
+  if(!fault&&lastFault){lastMttr=incidentStart?((Date.now()-incidentStart)/1000):null;addEvent("復旧完了",lastMttr!=null?`検知→復旧 ${lastMttr.toFixed(1)}s`:"","recover");incidentStart=null;douseFlame();stampChinka();}
+  if(fault&&contained&&!lastContained)addEvent("延焼止を確認","demo 実測","contain");  // runContain 実行時は先に lastContained=true 済み＝二重記録しない
+  const wasFault=lastFault;lastFault=fault;lastContained=contained;
+  renderFlame(fault,contained);
+  setScene(fault,contained,(m.error_rate||0)>=0.08);
+  renderShichiyaku();
+  if(!busy)document.querySelectorAll('#feed .chip').forEach(c=>c.disabled=false);
+  if(!!fault!==!!wasFault&&!hasDiag&&!busy)renderFeed(LAST_SCN,null);  // refresh standby copy on fault change
+  if(fault&&autoDiag&&!hasDiag&&!busy)maybeAutoDiagnose();  // アラート連動：検知したら自動で診断開始
+  $("#iid").textContent=fault?incLabel():"待機中";
+  const cat=$("#tb-cat");if(fault){cat.style.display="";cat.className="tb-cat fault";cat.innerHTML=`<span class="gl"></span>${CAT[fault]||fault}`;}else{cat.style.display="none";}
+  $("#b-rev").textContent=m.revision!=null?m.revision:"–";
+  $("#b-mttr").textContent=lastMttr!=null?lastMttr.toFixed(1)+"s":"–";
+  if(!incidentStart)$("#b-elapsed").textContent="–";
+  renderSvc(m,fault);renderInfo(m,fault);
+  // ribbon
+  METRICS.forEach(spec=>{
+    const v=spec.get(m);if(v==null)return;
+    // 実サンプルのみ蓄積（過去点のバックフィルはしない＝観測していない時刻の値を作らない・§20）。
+    const arr=hist[spec.key];
+    arr.push({t:Date.now(),v});if(arr.length>CAP)arr.shift();
+    const over=v>spec.thresh;
+    const val=$("#val-"+spec.key);val.textContent=spec.fmt(v);val.className="val num"+(over?" bad":"");
+    $("#dot-"+spec.key).className="dot"+(over?" bad":"");
+    const ratio=spec.baseline?v/spec.baseline:1,up=v>spec.baseline*1.05,dn=v<spec.baseline*0.95;
+    const de=$("#delta-"+spec.key);de.className="delta"+(over&&up?" up":dn?" down":"");
+    de.textContent=Math.abs(ratio-1)<0.05?"通常範囲":(ratio>=3?ratio.toFixed(0)+"× 通常時":(up?"+":"")+((ratio-1)*100).toFixed(0)+"% 対通常");
+    const sp=$("#spark-"+spec.key);if(sp)sp.innerHTML=sparkSVG(arr,spec.thresh,64,26);
+  });
+  const vs=$("#val-status");vs.textContent=fault?(contained?"障害発生中・延焼止":"障害発生中"):"正常";vs.className="val"+(fault?" bad":"");
+  $("#dot-status").className="dot"+(fault?" bad":"");
+  syncDiagnoseBtn();
+  // アクティブなページの実値表示を追従更新（Runbook は閲覧中の再描画をしない）。
+  if(VIEW==="metrics")renderMetricsPage();
+  else if(VIEW==="services")refreshServiceLive();
+  else if(VIEW==="history")renderHistoryPage();
+}
+
+/* ---------- verdict ---------- */
+function verdictEmpty(){return `<div class="vc-empty">${svgIcon('shield')}診断待ち — 提案はまだありません</div>`;}
+function verdictHTML(v){
+  const conf=Math.round((v.confidence||0)*100);
+  const cc=conf>=80?"var(--ok)":conf>=60?"var(--warn)":"var(--danger)";
+  const safety=v.requires_hitl?`<span class="safety hitl">${svgIcon('flag',12)}要人間承認</span>`:`<span class="safety auto">${svgIcon('check',12)}自動許容</span>`;
+  const check=activeExpect?`<div class="check">答え合わせ（期待対処）: <b>${REM[activeExpect]||esc(activeExpect)}</b>${v.remediation_type===activeExpect?`<span class="m ok">${svgIcon('check',12)}一致</span>`:`<span class="m no">${svgIcon('x',12)}不一致</span>`}</div>`:"";
+  const ev=(v.evidence||[]).filter(e=>e&&e.fact);
+  const evHTML=ev.length?`<div class="vc-sec"><div class="vc-sec-h">${svgIcon('search',12)}根拠（出典つき）</div><ul class="ev-list">`
+    +ev.map(e=>`<li><span class="ev-f">${esc(e.fact)}</span>${e.source?`<span class="ev-s">${esc(e.source)}</span>`:""}</li>`).join("")+`</ul></div>`:"";
+  const plan=(v.remediation_plan||[]).filter(Boolean);
+  const planHTML=plan.length?`<div class="vc-sec"><div class="vc-sec-h">${svgIcon('flag',12)}対処手順 <span class="vc-sec-note">提案・未実行（承認で実行）</span></div><ol class="plan-list">`
+    +plan.map(s=>`<li>${esc(s)}</li>`).join("")+`</ol></div>`:"";
+  return `<div class="vc${v.requires_hitl?' hitl':''}">
+    <div class="vc-head"><div class="rc">${esc(v.root_cause_text||"")}</div><span class="vc-cat">${CAT[v.root_cause_category]||esc(v.root_cause_category)}</span></div>
+    <div class="vc-b">
+      <div class="rem"><span class="lab">推奨対処</span><span class="val">${REM[v.remediation_type]||esc(v.remediation_type)}</span>${safety}</div>
+      <div class="conf"><div class="lab">確信度（モデル自己申告）<b>${conf}%</b></div><div class="bar"><i style="width:${conf}%;background:${cc}"></i></div></div>
+      <div class="vmeta" title="この実行で実測（${esc(v.model||'Vertex/Gemini')}・temp=${v.temperature!=null?v.temperature:0}）"><span>実コスト <b>¥${v.cost_yen!=null?v.cost_yen.toFixed(2):"–"}</b></span><span>レイテンシ <b>${v.latency_ms!=null?(v.latency_ms/1000).toFixed(1):"–"}s</b></span><span>調査ツール <b>${(v.tool_trajectory||[]).length}</b>回</span></div>
+      ${evHTML}
+      ${planHTML}
+      ${check}
+      <div class="approve-wrap"><button id="approve" class="btn-approve" data-action="${esc(v.remediation_type)}">${svgIcon('check',15)}承認して復旧</button>
+        <span class="info-btn" tabindex="0" role="button" aria-label="承認の安全境界の説明">${svgIcon('info',15)}<span class="pop">承認すると <b>/admin/recover</b> を実行します。誤った対処では復旧しません（安全境界）。</span></span></div>
+      <div id="recover-out" aria-live="polite"></div>
+    </div></div>`;
+}
+
+/* ---------- diagnose ---------- */
+/* 診断中の逐次レーン描画：完了 phase は実推論（reasonBlock）、次の phase を running に。 */
+function renderStreamLanes(state,note){
+  let html=injectBarHTML(LAST_SCN);
+  html+=`<div class="standby"><span class="spin" style="vertical-align:-2px"></span> ${esc(note||"実エージェントが demo を調査中…")} <b class="num" id="t" aria-hidden="true">0s</b><div class="prog"><i></i></div></div>`;
+  let runningSet=false;
+  html+=PHASE_ORDER.map(k=>{
+    const ps=state[k];
+    if(ps){
+      // RAG は最終描画（renderFeed）と同じ provenance 注記をストリーム中も付ける（§20）。
+      const rnote=k==='rag'?(kbConnected?'デモKB（合成・キーワード検索）から取得した参照に基づく（出典は本文「参照:」）。本番は Vector Search 2.0。':'KB未接続：以下はモデルの一般知識による参考（検索結果ではない）'):'';
+      return laneHTML(k,{status:'done',collapsed:collapsed[k],count:(ps.tools||[]).length,body:reasonBlock(ps.reasoning||"",{note:rnote,noteCls:(k==='rag'&&kbConnected)?'ok':''})});
+    }
+    const st=runningSet?'pending':'running';runningSet=true;
+    return laneHTML(k,{status:st,collapsed:collapsed[k],body:`<div class="skel" style="width:88%"></div><div class="skel" style="width:70%"></div>`});
+  }).join('');
+  $("#feed").innerHTML=html;wireInject();syncDiagnoseBtn();paintIcons($("#feed"));
+}
+
+/* SSE（fetch ストリーム）で /api/diagnose/stream を読む。verdict/no_fault/error の最終イベントを返す。 */
+async function streamDiagnose(onProgress){
+  const headers={};if(TOKEN)headers["Authorization"]="Bearer "+TOKEN;
+  const res=await fetch("/api/diagnose/stream",{method:"POST",headers});
+  if(res.status===401){showUnlock(!!TOKEN);throw new Error("認証が必要です");}
+  if(!res.ok||!res.body)throw new Error("stream unavailable: "+res.status);
+  const reader=res.body.getReader(),dec=new TextDecoder();let buf="",final=null;
+  for(;;){
+    const {done,value}=await reader.read();
+    if(done)break;
+    buf+=dec.decode(value,{stream:true});
+    let i;
+    while((i=buf.indexOf("\n\n"))>=0){
+      const chunk=buf.slice(0,i);buf=buf.slice(i+2);
+      const line=chunk.split("\n").find(l=>l.startsWith("data: "));
+      if(!line)continue;
+      const ev=JSON.parse(line.slice(6));
+      if(ev.type==="phase"||ev.type==="retry")onProgress(ev);
+      else final=ev;  // verdict / no_fault / error
+    }
+  }
+  if(!final)throw new Error("stream ended without result");
+  return final;
+}
+
+async function runDiagnose(){
+  if(busy)return;busy=true;const d=$("#diagnose");if(d)d.disabled=true;
+  addEvent("Hikeshi 診断開始","Triage→Investigate→RAG→Remediate","diagnose");
+  const phaseState={};
+  renderStreamLanes(phaseState);
+  let s=0;const timer=setInterval(()=>{s++;const t=$("#t");if(t)t.textContent=s+"s";},1000);
+  try{
+    let v;
+    try{
+      v=await streamDiagnose(ev=>{
+        if(ev.type==="phase"){
+          if(ev.phase==="rag"&&typeof ev.kb_connected==="boolean")kbConnected=ev.kb_connected;
+          phaseState[ev.phase]={reasoning:ev.reasoning,tools:ev.tools};renderStreamLanes(phaseState);
+        }
+        else if(ev.type==="retry"){for(const k of Object.keys(phaseState))delete phaseState[k];renderStreamLanes(phaseState,`一時エラー → 再試行（${ev.attempt}/${ev.max_attempts} 回目）…`);}
+        const t=$("#t");if(t)t.textContent=s+"s";  // 再描画直後の "0s" チラつき防止
+      });
+    }catch(se){
+      if(se&&/認証が必要/.test(se.message||""))throw se;
+      // フォールバックは「ストリームが一度も届かなかった」場合のみ＝診断済みの run を
+      // 黙って二重実行しない（コスト二重化防止）。途中で切れた場合はエラー表示＋手動再試行。
+      // 公開モードでは直前の stream がレート間隔を消費済みのため本経路は 429 になり得る
+      // （日本語 detail＋再試行ボタンで復帰。間隔免除はレート制限の迂回路になるため設けない）。
+      if(Object.keys(phaseState).length)throw se;
+      v=await api("/api/diagnose",{method:"POST"});  // ストリーム不可の環境では従来の一括取得へフォールバック
+    }
+    clearInterval(timer);
+    if(v.type==="error")throw new Error(v.message||"診断に失敗しました");
+    if(v.no_fault||v.type==="no_fault"){renderFeed(LAST_SCN,null);toast(v.message||"障害がありません");return;}
+    activeExpect=v.expected_remediation||null;hasDiag=true;kbConnected=v.kb_connected!==false;LAST_VERDICT=v;
+    renderFeed(LAST_SCN,{detail:v.tool_trajectory_detail,reasoning:v.reasoning,v});
+    $("#feed-meta").textContent=`4 phase · ¥${(v.cost_yen||0).toFixed(2)} · ${((v.latency_ms||0)/1000).toFixed(1)}s`;
+    $("#verdict").innerHTML=verdictHTML(v);$("#approve").onclick=approve;
+    addEvent("対処を提案",`${REM[v.remediation_type]||v.remediation_type} · ¥${(v.cost_yen||0).toFixed(2)} · ${((v.latency_ms||0)/1000).toFixed(1)}s`,"propose");
+  }catch(e){
+    clearInterval(timer);renderFeed(LAST_SCN,null);
+    $("#feed").insertAdjacentHTML('beforeend',`<div class="err-banner">${svgIcon('alert')}診断に失敗: ${esc(e.message)} <button onclick="this.parentElement.remove();runDiagnose()">再試行</button><button onclick="this.parentElement.remove()">閉じる</button></div>`);
+  }
+  finally{busy=false;await poll();}
+}
+
+async function approve(ev){
+  const btn=ev.currentTarget,action=btn.dataset.action;btn.disabled=true;
+  const rout=$("#recover-out");
+  rout.innerHTML=`<div class="result" style="background:var(--surface-3);color:var(--muted)"><span class="spin"></span>${REM[action]||action} を適用中…</div>`;
+  try{
+    const r=await api(`/api/recover?action=${encodeURIComponent(action)}`,{method:"POST"});
+    if(r.recovered){addEvent("承認 → 復旧実行",`適用: ${REM[r.applied]||r.applied}`,"approve");rout.innerHTML=`<div class="result ok">${svgIcon('check',14)}復旧しました（適用: ${REM[r.applied]||esc(r.applied)}）</div>
+      <div class="post-actions"><button id="pm-gen" class="btn-pm">${svgIcon('book',14)}<span>ポストモーテム案を生成</span></button><button id="rep-gen" class="btn-pm">${svgIcon('flag',14)}<span>障害レポート出力</span></button></div>`;
+      const pg=$("#pm-gen");if(pg)pg.onclick=pmDraft;const rg=$("#rep-gen");if(rg)rg.onclick=()=>exportIncidentReport(r.applied);}
+    else{addEvent("承認 → 復旧拒否",`${REM[action]||action} は不適合`,"approve");rout.innerHTML=`<div class="result no">${svgIcon('x',14)}復旧しませんでした。${esc(r.message||"")}</div>`;btn.disabled=false;}
+    await poll();
+  }catch(e){rout.innerHTML=`<div class="err-banner">${svgIcon('alert')}復旧に失敗: ${esc(e.message)}<button onclick="this.parentElement.remove()">閉じる</button></div>`;btn.disabled=false;}
+}
+
+/* ---------- postmortem → KB（自己改善ループ・HITL） ---------- */
+async function pmDraft(){
+  const rout=$("#recover-out"),b=$("#pm-gen");if(b)b.disabled=true;
+  try{
+    const d=await api("/api/postmortem/draft",{method:"POST"});
+    if(!rout.isConnected)return;  // 取得中に画面が掃除されたら何もしない
+    const old=$("#pm-card");if(old)old.remove();
+    rout.insertAdjacentHTML('beforeend',`<div class="pm" id="pm-card">
+      <div class="pm-h">${svgIcon('book',14)}ポストモーテム案（実診断記録から生成）— 編集して承認すると KB に追加され、次の診断から検索対象になります</div>
+      <textarea id="pm-text" spellcheck="false" aria-label="ポストモーテム本文"></textarea>
+      <div class="pm-actions"><button id="pm-approve" class="btn-approve">${svgIcon('check',14)}承認して KB へ追加</button><button id="pm-discard" class="btn-pm-ghost">破棄</button></div>
+      ${d.persistent?"":`<div class="pm-note">※ Cloud Run ではこのインスタンスの寿命のみ有効（永続化＝GCS/Vector Search は roadmap）</div>`}
+    </div>`);
+    const ta=$("#pm-text");if(!ta)return;
+    ta.value=d.markdown;
+    $("#pm-approve").onclick=()=>pmApprove(d.filename);
+    $("#pm-discard").onclick=()=>{const c=$("#pm-card");if(c)c.remove();if(b)b.disabled=false;};
+  }catch(e){toast("ポストモーテム生成に失敗: "+e.message);if(b)b.disabled=false;}
+}
+async function pmApprove(filename){
+  const btn=$("#pm-approve");btn.disabled=true;
+  try{
+    const r=await api("/api/postmortem/approve",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({markdown:$("#pm-text").value,filename})});
+    addEvent("ポストモーテム承認 → KB 追加",`${r.source} · KB ${r.kb_size}件`,"approve");
+    const card=$("#pm-card");  // 保存は成功済み＝カードが掃除されていてもタイムラインに記録は残る
+    if(card)card.innerHTML=`<div class="result ok">${svgIcon('check',14)}KB に追加しました（${esc(r.source)}・計 ${r.kb_size} 件）。次の診断から検索対象です。${r.persistent?"":"※ Cloud Run ではインスタンス寿命のみ"}</div>`;
+  }catch(e){toast("KB への保存に失敗: "+e.message);btn.disabled=false;}
+}
+
+/* ---------- 障害レポート出力（顧客提出用・記録済みの実値のみ・クライアント生成） ---------- */
+function _reportModel(applied){
+  const v=LAST_VERDICT||{};
+  const base=events.length?events[events.length-1].t:Date.now();
+  const nopipe=s=>(s==null?"":(""+s)).replace(/\|/g,"／");  // 表セルに | が来ても Markdown 表が崩れない
+  const tl=events.slice().reverse().map(e=>({time:hms(e.t),rel:((e.t-base)/1000).toFixed(1),label:nopipe(e.label),sub:nopipe(e.sub||"")}));
+  return {id:incLabel(),generated:new Date().toLocaleString("ja-JP"),
+    cat:CAT[v.root_cause_category]||v.root_cause_category||"—",rc:v.root_cause_text||"—",
+    rem:REM[v.remediation_type]||v.remediation_type||"—",applied:REM[applied]||applied||"—",
+    conf:v.confidence!=null?Math.round(v.confidence*100):null,hitl:!!v.requires_hitl,
+    evidence:(v.evidence||[]).filter(e=>e&&e.fact),plan:(v.remediation_plan||[]).filter(Boolean),
+    mttr:lastMttr,cost:v.cost_yen,latency:v.latency_ms,tools:(v.tool_trajectory||[]).length,
+    model:v.model||"Vertex/Gemini",timeline:tl};
+}
+function reportMarkdown(m){
+  const L=[];
+  L.push(`# 障害レポート ${m.id}`,"","> 環境: **合成デモ環境（Hikeshi）** ／ 生成: "+m.generated+" ／ 本レポートは実際の検知・診断・復旧の記録から自動生成","");
+  L.push("## サマリ","",`- 根本原因: ${m.rc}`,`- 分類: ${m.cat}`,`- 適用した対処: **${m.applied}**`+(m.applied!==m.rem?`（推奨: ${m.rem}）`:""));
+  if(m.conf!=null)L.push(`- 確信度（モデル自己申告）: ${m.conf}%`);
+  if(m.mttr!=null)L.push(`- 検知→復旧（MTTR）: **${m.mttr.toFixed(1)}s**（人の承認時間を含む・デモ実測）`);
+  L.push("");
+  if(m.evidence.length){L.push("## 根拠（出典つき）","");m.evidence.forEach(e=>L.push(`- ${e.fact}`+(e.source?`　〔出典: ${e.source}〕`:"")));L.push("");}
+  if(m.plan.length){L.push("## 対処手順（提案）","");m.plan.forEach((s,i)=>L.push(`${i+1}. ${s}`));L.push("",`_実際に適用したのは「${m.applied}」。上記手順は提案であり全ステップの実行を保証するものではありません。_`,"");}
+  L.push("## タイムライン","","| 時刻 | 経過 | イベント | 詳細 |","|---|---|---|---|");
+  m.timeline.forEach(e=>L.push(`| ${e.time} | +${e.rel}s | ${e.label} | ${e.sub} |`));L.push("");
+  L.push("## 計測（実測）","",`- 診断コスト: ¥${m.cost!=null?m.cost.toFixed(2):"–"} ／ 診断レイテンシ: ${m.latency!=null?(m.latency/1000).toFixed(1):"–"}s ／ 調査ツール: ${m.tools}回`,`- 診断モデル: ${m.model}（temp=0）`,"");
+  return L.join("\n");
+}
+function reportHTML(m){
+  const md=reportMarkdown(m);
+  // markdown-lite → HTML（既存 fmtReason は使わずレポート用に簡易整形）
+  const esc2=s=>esc(s);
+  let body=esc2(md).replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/_(.+?)_/g,'<i>$1</i>');
+  // テーブル
+  body=body.replace(/(\|.+\|\n)+/g,t=>{const rows=t.trim().split("\n").map(r=>r.split("|").slice(1,-1));
+    const head=rows[0],data=rows.slice(2);
+    return '<table><thead><tr>'+head.map(h=>`<th>${h.trim()}</th>`).join("")+'</tr></thead><tbody>'+
+      data.map(r=>'<tr>'+r.map(c=>`<td>${c.trim()}</td>`).join("")+'</tr>').join("")+'</tbody></table>';});
+  body=body.split("\n").map(ln=>ln.trim()&&!/^<(h1|h2|table|tbody|thead|tr|td|th)/.test(ln)?(/^[0-9]+\. /.test(ln)?`<div class="li">${ln}</div>`:(/^- /.test(ln)?`<div class="li">${ln.slice(2)}</div>`:(/^&gt; /.test(ln)?`<blockquote>${ln.slice(4)}</blockquote>`:`<p>${ln}</p>`))):ln).join("\n");
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>障害レポート ${esc2(m.id)}</title>
+<style>body{font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#1C1C1C;max-width:820px;margin:40px auto;padding:0 24px;line-height:1.6}
+h1{font-size:24px;border-bottom:2px solid #B8392C;padding-bottom:8px}h2{font-size:16px;margin-top:28px;color:#5C5446;border-bottom:1px solid #E0D8C6;padding-bottom:4px}
+blockquote{color:#6A6254;font-size:13px;background:#F4EFE6;border-left:3px solid #CFC2AA;margin:0;padding:8px 12px;border-radius:0 4px 4px 0}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #E0D8C6;padding:5px 8px;text-align:left}th{background:#EAE0CD}
+.li{margin:3px 0}b{color:#1C1C1C}i{color:#6A6254;font-size:13px}
+@media print{body{margin:0}}</style></head><body>${body}
+<p style="margin-top:40px;font-size:11px;color:#7A7264">Generated by Hikeshi — synthetic demo environment.</p></body></html>`;
+}
+function _download(filename,mime,content){
+  const blob=new Blob([content],{type:mime});const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();
+  a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportIncidentReport(applied){
+  if(!LAST_VERDICT){toast("診断結果がありません");return;}
+  const m=_reportModel(applied);
+  const rg=$("#rep-gen");if(rg)rg.disabled=true;
+  const host=$("#recover-out");
+  const old=$("#rep-card");if(old)old.remove();
+  host.insertAdjacentHTML('beforeend',`<div class="pm" id="rep-card">
+    <div class="pm-h">${svgIcon('flag',14)}障害レポート ${esc(m.id)} — 記録済みの実値のみ（合成デモ環境）</div>
+    <div class="pm-actions"><button id="rep-md" class="btn-approve">${svgIcon('book',14)}Markdown 保存</button><button id="rep-html" class="btn-pm-ghost">HTML（印刷でPDF）</button><button id="rep-close" class="btn-pm-ghost">閉じる</button></div>
+    <div class="pm-note">タイムライン・MTTR・原因・根拠・対処・コストを顧客提出用にまとめます。対処手順は提案（適用は「${esc(m.applied)}」）。</div>
+  </div>`);
+  $("#rep-md").onclick=()=>_download(m.id+"_incident_report.md","text/markdown;charset=utf-8",reportMarkdown(m));
+  $("#rep-html").onclick=()=>_download(m.id+"_incident_report.html","text/html;charset=utf-8",reportHTML(m));
+  $("#rep-close").onclick=()=>{const c=$("#rep-card");if(c)c.remove();if(rg)rg.disabled=false;};
+}
+
+/* ---------- 防火：依存脆弱性スキャン（OSV・能動・HITL・提案のみ） ---------- */
+function ensureFirewatchEl(){
+  if($("#fw"))return;
+  const st=document.createElement("style");
+  st.textContent=`#fw{position:fixed;inset:0;z-index:1500;display:none;background:rgba(28,28,28,.42)}
+  #fw.show{display:flex;align-items:flex-start;justify-content:center}
+  .fw-panel{width:min(94vw,720px);max-height:90vh;margin-top:5vh;display:flex;flex-direction:column;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--r-card);box-shadow:var(--sh-pop);overflow:hidden}
+  .fw-head{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-3);background:var(--surface-1);border-bottom:1px solid var(--line)}
+  .fw-head .fw-t{font-weight:700;font-size:var(--t-md);display:flex;align-items:center;gap:6px}
+  .fw-head .fw-sub{font-size:var(--t-cap);color:var(--ash);margin-left:6px}
+  .fw-x{margin-left:auto;background:transparent;border:1px solid var(--line);border-radius:var(--r-control);color:var(--muted);cursor:pointer;padding:4px 10px;font-size:var(--t-base)}
+  .fw-x:hover{background:var(--hover)}
+  .fw-body{overflow-y:auto;padding:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-2)}
+  .fw-summary{font-size:var(--t-base);color:var(--muted);padding-bottom:var(--sp-1)}
+  .fw-degraded,.fw-foot{font-size:var(--t-cap);color:var(--ash)}
+  .fw-foot{border-top:1px solid var(--line);padding-top:var(--sp-2);margin-top:var(--sp-1)}
+  .fw-loading{display:flex;align-items:center;gap:8px;color:var(--muted);padding:var(--sp-4) 0;justify-content:center}
+  .fw-card{border:1px solid var(--line);border-left:3px solid var(--line-strong);border-radius:var(--r-card);padding:var(--sp-3);background:var(--kinari)}
+  .fw-card.crit{border-left-color:var(--shu)} .fw-card.warn{border-left-color:var(--warn-line)}
+  .fw-c-head{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+  .fw-sev{font-size:10px;font-weight:700;padding:1px 6px;border-radius:var(--r-data);color:#fff}
+  .btn-hansho{display:inline-flex;align-items:center;gap:var(--sp-1);padding:7px 12px;color:#fff;background:var(--shu);border:1px solid var(--shu);border-radius:var(--r-control);font-size:var(--t-base);font-weight:600;cursor:pointer}
+  .btn-hansho:hover:not(:disabled){background:var(--shu-dark)} .btn-hansho:disabled{opacity:.5;cursor:not-allowed}
+  body.kajiba .btn-hansho{color:#241511}
+  .fw-sev.crit{background:var(--shu)} .fw-sev.warn{background:var(--warn)} .fw-sev.low{background:var(--ash)}
+  .fw-kev{font-size:10px;font-weight:700;padding:1px 7px;border-radius:var(--r-pill);background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-line)}
+  .yomawari{padding:var(--sp-3);border-bottom:1px solid var(--line);background:var(--surface-1)}
+  .yw-head{display:flex;align-items:center;gap:var(--sp-2)}
+  .yw-t{font-weight:700;font-size:var(--t-base);display:flex;align-items:center;gap:6px;flex:1}
+  .yw-run{white-space:nowrap}
+  .yw-body{margin-top:var(--sp-2);font-size:var(--t-base)}
+  .yw-meta{color:var(--muted)} .yw-meta b{color:var(--sumi)}
+  .yw-cap{font-size:var(--t-cap);color:var(--shu);margin:3px 0 6px}
+  .yw-muted{color:var(--ash);font-size:var(--t-cap)}
+  .yw-list{display:flex;flex-direction:column;gap:3px}
+  .yw-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:var(--t-cap);padding:3px 0;border-top:1px solid var(--line)}
+  .yw-cve{font-family:var(--mono);font-weight:600;color:var(--sumi)}
+  .yw-prod{color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .yw-ransom{color:var(--danger);font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+  .yw-due{color:var(--warn);font-variant-numeric:tabular-nums}
+  .fw-pkg{font-family:var(--mono);font-size:var(--t-md)} .fw-ver{font-family:var(--mono);font-size:var(--t-base);color:var(--muted)}
+  .fw-risk{font-size:var(--t-cap);margin-left:auto;padding:1px 6px;border-radius:var(--r-pill);border:1px solid var(--line)}
+  .fw-risk.risk-high{color:var(--danger);background:var(--danger-bg)} .fw-risk.risk-medium{color:var(--warn);background:var(--warn-bg)} .fw-risk.risk-low{color:var(--ok);background:var(--ok-bg)}
+  .fw-assess{margin-top:var(--sp-2);font-size:var(--t-base);line-height:1.5;color:var(--sumi)}
+  .fw-assess .fw-note{font-size:var(--t-cap);color:var(--muted);margin-top:2px}
+  .fw-cves{margin-top:var(--sp-2);display:flex;gap:6px;flex-wrap:wrap}
+  .fw-cves .cve{font-family:var(--mono);font-size:10px;color:var(--info);background:var(--info-bg);border-radius:var(--r-data);padding:1px 5px;text-decoration:none}
+  .fw-cves .cve:hover{text-decoration:underline}
+  .fw-actions{margin-top:var(--sp-2)} .fw-adopted{margin-top:var(--sp-2)} .fw-adopted code{font-family:var(--mono);font-size:12px;background:var(--surface-3);padding:1px 4px;border-radius:3px}`;
+  document.head.appendChild(st);
+  const el=document.createElement("div");el.id="fw";
+  el.innerHTML=`<div class="fw-panel" role="dialog" aria-modal="true" aria-label="火の用心（防火） 依存脆弱性スキャン">
+    <div class="fw-head"><span class="fw-t">${svgIcon('shield',16)}火の用心 — 依存脆弱性スキャン</span><span class="fw-sub" id="fw-src"></span><button class="fw-x" id="fw-close">閉じる</button></div>
+    <div class="yomawari" id="yomawari"></div>
+    <div class="fw-body" id="fw-body"></div>
+    <div class="fw-foot" id="fw-foot"></div></div>`;
+  document.body.appendChild(el);paintIcons(el);
+  $("#fw-close").onclick=()=>$("#fw").classList.remove("show");
+  el.onclick=e=>{if(e.target===el)$("#fw").classList.remove("show");};
+}
+async function openFirewatch(){
+  ensureFirewatchEl();$("#fw").classList.add("show");
+  $("#fw-body").innerHTML=`<div class="fw-loading"><span class="spin"></span> OSV のアドバイザリを照会し安全性を評価中…</div>`;
+  $("#fw-foot").textContent="";
+  loadYomawari();  // 夜回り現況（読み取り専用・並行）
+  try{const d=await api("/api/depscan",{method:"POST"});renderFirewatch(d);}
+  catch(e){$("#fw-body").innerHTML=`<div class="err-banner">${svgIcon('alert')}スキャンに失敗: ${esc(e.message)}<button onclick="this.parentElement.remove()">閉じる</button></div>`;}
+}
+function fwSev(s){return (s==="CRITICAL"||s==="HIGH")?"crit":((s==="MODERATE"||s==="MEDIUM")?"warn":"low");}
+const fwSafeUrl=u=>/^https?:\/\//i.test(u||"")?u:"";  // http(s) 以外（javascript: 等）は href にしない
+async function loadYomawari(){
+  const el=$("#yomawari");if(!el)return;
+  el.innerHTML=`<div class="yw-head"><span class="yw-t">${svgIcon('shield',14)}夜回り — 最新の脅威インテリを火元帳に蓄える</span><button class="btn-pm-ghost yw-run" id="yw-run" title="一次情報源(CISA KEV / GitHub Advisory)から実データを取得し、火元帳(KB)を最新化します。">巡回を実行</button></div><div class="yw-body" id="yw-body"><span class="spin"></span> 読み込み中…</div>`;
+  $("#yw-run").onclick=runYomawari;
+  try{renderYomawari(await api("/api/securitywatch"));}
+  catch(e){$("#yw-body").innerHTML=`<span class="yw-muted">夜回りの現況を取得できません: ${esc(e.message)}</span>`;}
+}
+function renderYomawari(s){
+  const m=s.manifest||{},kev=s.newest_kev||[];
+  const when=m.fetched_at?hms(Date.parse(m.fetched_at))+" ("+esc(m.fetched_at.slice(0,10))+")":"未取得";
+  const rows=kev.map(v=>`<div class="yw-row"><span class="yw-cve">${esc(v.cveID)}</span><span class="yw-prod">${esc(v.vendorProject)} ${esc(v.product)}</span>${String(v.knownRansomwareCampaignUse).toLowerCase()==='known'?`<span class="yw-ransom" title="ランサムウェア悪用が確認されている">ransomware</span>`:""}${v.dueDate?`<span class="yw-due">是正期限 ${esc(v.dueDate)}</span>`:""}</div>`).join("");
+  $("#yw-body").innerHTML=`<div class="yw-meta">最終巡回 <b>${when}</b> ／ 蓄積 KEV <b>${esc(m.kev_count!=null?m.kev_count:"–")}</b>・GHSA <b>${esc(m.ghsa_count!=null?m.ghsa_count:"–")}</b>（カタログ全体は突合用に全件保持）</div><div class="yw-cap">CISA が「実際に悪用中」と公表した最新脆弱性 — 汎用LLMの知識カットオフを超えて突き合わせます</div><div class="yw-list">${rows||'<span class="yw-muted">データ未整備。巡回を実行してください。</span>'}</div>`;
+}
+async function runYomawari(){
+  const b=$("#yw-run");if(b)b.disabled=true;
+  $("#yw-body").innerHTML=`<span class="spin"></span> 一次情報源から取得し火元帳を更新中…`;
+  try{const r=await api("/api/securitywatch/refresh",{method:"POST"});
+    toast("夜回り完了：火元帳を最新化しました（KB "+r.kb_size+" 件）");
+    addEvent("夜回り — 脅威インテリ更新",`KEV ${r.manifest.kev_count} / GHSA ${r.manifest.ghsa_count} 件を火元帳へ`,"propose");
+    renderYomawari(await api("/api/securitywatch"));}
+  catch(e){$("#yw-body").innerHTML=`<span class="yw-muted">巡回に失敗: ${esc(e.message)}</span>`;}
+  finally{const b2=$("#yw-run");if(b2)b2.disabled=false;}
+}
+function renderFirewatch(d){
+  $("#fw-src").textContent=`実データ: ${d.osv_source||"OSV.dev"}（コミット済みスナップショット）／ 対象: ${d.manifest_label||"合成サンプル"}`;
+  const fs=d.findings||[];
+  const skip=d.skipped_unpinned?`（範囲指定など ${d.skipped_unpinned} 件はスキャン対象外）`:"";
+  let html=`<div class="fw-summary"><b>${fs.length}</b> / ${d.total_packages} 固定 pin に既知脆弱性${skip} — <b>提案のみ・自動更新しない（HITL）</b></div>`;
+  if(d.assessment_available===false)html+=`<div class="fw-degraded">※ LLM 安全性評価は鍵未設定/一時失敗のため省略（脆弱性データ＝OSV 実物は下に表示）</div>`;
+  html+=fs.map(f=>{
+    const sc=fwSev(f.max_severity),a=f.assessment;
+    const cves=(f.vulns||[]).slice(0,8).map(v=>{
+      const u=fwSafeUrl(v.advisory_url),id=esc((v.aliases||[]).find(x=>x.startsWith("CVE-"))||v.id);
+      return u?`<a class="cve" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(v.summary||"")}">${id}</a>`:`<span class="cve" title="${esc(v.summary||"")}">${id}</span>`;
+    }).join("");
+    const assessHTML=a?`<div class="fw-assess">${esc(a.risk_summary)}<div class="fw-note">更新の注意: ${esc(a.upgrade_note)}　／　検証: ${esc(a.verification)}</div></div>`
+      :`<div class="fw-assess">${esc((f.vulns[0]||{}).summary||"")}</div>`;
+    return `<div class="fw-card ${sc}">
+      <div class="fw-c-head"><span class="fw-sev ${sc}">${esc(f.max_severity)}</span><b class="fw-pkg">${esc(f.package)}</b><span class="fw-ver">${esc(f.current_version)} → <b>${esc(f.recommended_version)||"?"}</b></span><span class="fw-risk risk-${esc(f.breaking_risk)}">破壊リスク ${esc(f.breaking_risk)}</span>${f.actively_exploited?`<span class="fw-kev" title="CISA が実際に悪用中(KEV)と公表。是正期限 ${esc(f.kev_due_date||"")}">🔥 実際に悪用中${f.kev_due_date?`・期限 ${esc(f.kev_due_date)}`:""}</span>`:""}</div>
+      ${assessHTML}
+      <div class="fw-cves">${cves}</div>
+      <div class="fw-actions"><button class="btn-approve fw-adopt" data-cmd="${esc(f.fix_command)}" data-pkg="${esc(f.package)}">${svgIcon('check',13)}更新提案を採用</button></div>
+      <div class="fw-adopted" hidden></div></div>`;
+  }).join("")||`<div class="fw-loading">${svgIcon('check')}既知の脆弱性は見つかりませんでした</div>`;
+  $("#fw-body").innerHTML=html;
+  $("#fw-foot").innerHTML=`合成サンプル manifest（古い版を意図的に固定）× <b>実物の OSV アドバイザリ</b>。更新は人間がレビュー・承認して別途実行（このデモは pip 実行/PR 作成をしない）。`;
+  $("#fw-body").querySelectorAll(".fw-adopt").forEach(b=>b.onclick=()=>{
+    const box=b.closest(".fw-card").querySelector(".fw-adopted");box.hidden=false;
+    box.innerHTML=`<div class="result ok">${svgIcon('check',13)}採用：<code>pip install -U ${esc(b.dataset.cmd)}</code> を担当が実行（自動実行はしません）。更新後に回帰検証を。</div>`;
+    b.disabled=true;addEvent("火の用心（防火）：更新提案を採用",`${b.dataset.pkg} → ${b.dataset.cmd}`,"propose");
+  });
+}
+
+/* ---------- コックピット・ページ（ビュー切替＝可視性トグルのみ） ----------
+   既存DOM（#feed/#verdict/ribbon 等）は絶対に unmount しない＝ poll()/SSE 診断中の
+   切替でも安全（非表示ノードへの書き込みは無害）。表示する値はすべて実データ：
+   /api/signals（診断と同一の純関数）・/api/kb/*（実ファイル＋同一検索）・
+   /api/incidents（追記専用台帳）・hist（実ポーリング値のみ）。 */
+function showView(key){
+  if(!(key in VIEWS))key="incident";
+  VIEW=key;
+  $("#workmain").classList.toggle("page-hidden",key!=="incident");
+  document.querySelectorAll(".page").forEach(p=>p.classList.toggle("page-hidden",p.dataset.view!==key));
+  document.querySelectorAll("#nav .nav-row").forEach(b=>{
+    const on=b.dataset.view===key;b.classList.toggle("active",on);
+    if(on)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");
+  });
+  $("#crumb-root").textContent=VIEWS[key];
+  if(key==="services")renderServicesPage();
+  else if(key==="metrics")renderMetricsPage();
+  else if(key==="runbook")renderRunbookPage();
+  else if(key==="history")renderHistoryPage();
+}
+
+/* ---- サービス ---- */
+function renderServicesPage(){
+  $("#svc-overview").innerHTML=`<div class="page-note">読み込み中…</div>`;
+  renderSvcPolicy();
+  refreshServiceLive();
+}
+/* 経営層向け被害サマリ：記録済みの実値のみから決定的に組み立てる（推定値の創作はしない・無い値は「—」） */
+function execSummaryText(m,fault,contained){
+  const now=new Date().toLocaleString("ja-JP");
+  const er=m.error_rate!=null?(m.error_rate*100).toFixed(2)+"%":"—";
+  const lat=m.latency_p95_ms!=null?Math.round(m.latency_p95_ms)+"ms":"—";
+  const mem=m.memory_pct!=null?Math.round(m.memory_pct)+"%":"—";
+  const dur=(fault&&incidentStart)?Math.round((Date.now()-incidentStart)/1000)+"秒（このコンソールでの検知起点）":"—";
+  const stateTxt=fault?((contained?"障害発生中・延焼止（隔離済み）":"障害発生中")+"／分類: "+(CAT[fault]||fault)):"正常（インシデントなし）";
+  const diagTxt=(fault&&hasDiag&&LAST_VERDICT)?("診断済み — 推奨対処: "+(REM[LAST_VERDICT.remediation_type]||LAST_VERDICT.remediation_type)):(fault?"未診断":"—");
+  const th={};METRICS.forEach(s=>th[s.key]=s.fmt(s.thresh));  // 閾値は METRICS が単一の出所
+  return [
+    `【被害状況サマリ】${now} 時点（合成デモ環境・表示値はすべて実データ）`,
+    `対象サービス: hikeshi-demo`,
+    `状態: ${stateTxt}`,
+    `エラー率: ${er}（検知閾値 ${th.error_rate}・表示用）`,
+    `応答遅延 p95: ${lat}（検知閾値 ${th.latency}・表示用）`,
+    `メモリ: ${mem}（検知閾値 ${th.memory}・表示用）`,
+    `障害継続時間: ${dur}`,
+    `延焼防止（うだつ・隔離）: ${fault?(contained?"実施済み＝悪化は停止・完全復旧には対処承認が必要":"未実施"):"—"}`,
+    `対応状況: ${diagTxt}`,
+  ].join("\n");
+}
+async function copyExecSummary(){
+  const el=$("#exec-sum");if(!el)return;
+  try{await navigator.clipboard.writeText(el.textContent);toast("被害サマリをコピーしました");}
+  catch(_){
+    const r=document.createRange();r.selectNodeContents(el);
+    const s=getSelection();s.removeAllRanges();s.addRange(r);
+    toast("コピーできない環境です。選択済みのテキストを手動でコピーしてください。");
+  }
+}
+async function refreshServiceLive(){
+  let d;
+  try{d=await api("/api/signals");}
+  catch(e){if(VIEW==="services"&&!/認証が必要/.test(e.message||""))$("#svc-overview").innerHTML=`<div class="err-banner">${svgIcon('alert')}demo に接続できません: ${esc(e.message)}</div>`;return;}
+  if(VIEW!=="services")return;
+  const m=(d.raw||{}).metrics||{};
+  const contained=!!m.contained;
+  $("#svc-hint").textContent=d.fault?(CAT[d.fault]||d.fault):"正常";
+  // ---- 半鐘：現在の被害（実ポーリング値のみ・無い値は「—」） ----
+  $("#dmg-hint").textContent=d.fault?(contained?"延焼止・完全復旧待ち":"延焼中"):"平穏";
+  const thOf=k=>METRICS.find(s=>s.key===k).thresh;
+  const erOver=m.error_rate!=null&&m.error_rate>thOf("error_rate"),latOver=m.latency_p95_ms!=null&&m.latency_p95_ms>thOf("latency");
+  $("#svc-damage").innerHTML=`
+    <div class="dmg-grid">
+      <div class="sg"><div class="k">状態</div><div class="v${d.fault?' bad':''}" style="font-size:var(--t-md)">${d.fault?(contained?"障害中・延焼止":"障害発生中"):"正常"}</div></div>
+      <div class="sg"><div class="k">エラー率</div><div class="v num${erOver?' bad':''}">${m.error_rate!=null?(m.error_rate*100).toFixed(2)+"%":"—"}</div></div>
+      <div class="sg"><div class="k">応答遅延 p95</div><div class="v num${latOver?' bad':''}">${m.latency_p95_ms!=null?Math.round(m.latency_p95_ms)+"ms":"—"}</div></div>
+      <div class="sg"><div class="k">障害継続時間</div><div class="v num">${(d.fault&&incidentStart)?Math.round((Date.now()-incidentStart)/1000)+"s":"—"}</div></div>
+    </div>
+    ${(d.fault&&contained)?`<div class="page-note" style="margin-bottom:var(--sp-2)"><span class="contained-badge">延焼止</span> うだつ実施済み — 悪化は停止・火元は残存（復旧には対処承認が必要）。</div>`:""}
+    <div class="sec-cap">経営層向け被害サマリ（実データのみ・コピーして共有）</div>
+    <pre class="exec-sum" id="exec-sum">${esc(execSummaryText(m,d.fault,contained))}</pre>
+    <div class="post-actions"><button class="btn-pm" id="exec-copy">${svgIcon('flag',13)}<span>サマリをコピー</span></button><button class="btn-hansho" id="hansho-notify" ${notifying?'disabled':''} title="半鐘を鳴らす＝運用者が設定した通知先（Webhook）へ実データの被害サマリを送信します。未設定なら送信されません（正直にその旨を表示）。">${svgIcon('siren',13)}<span>半鐘を鳴らす — 通知送信</span></button></div>`;
+  const ec=$("#exec-copy");if(ec)ec.onclick=copyExecSummary;
+  const nb=$("#hansho-notify");
+  if(nb)nb.onclick=async()=>{
+    if(notifying)return;  // 2.5s 再描画でノードが差し替わっても二重送信しない
+    notifying=true;nb.disabled=true;
+    try{await api("/api/notify",{method:"POST"});toast("半鐘を鳴らしました（通知を送信）");addEvent("半鐘 — 通知送信","被害サマリを通知先へ送信","notify");}
+    catch(e){toast(e.message||"送信できません");}
+    finally{notifying=false;const cur=$("#hansho-notify");if(cur)cur.disabled=false;}
+  };
+  $("#svc-overview").innerHTML=`
+    <table class="kv-table">
+      <tr><th>サービス</th><td class="mono">hikeshi-demo（合成デモ環境の victim service）</td></tr>
+      <tr><th>エンドポイント</th><td class="mono">${esc(d.demo_url)}</td></tr>
+      <tr><th>稼働状態</th><td>${d.fault?`<b style="color:var(--shu-dark)">障害発生中（${esc(CAT[d.fault]||d.fault)}）</b>${contained?` <span class="contained-badge">延焼止</span>`:""}`:"正常"}</td></tr>
+      <tr><th>リビジョン</th><td class="mono">${esc(m.revision!=null?m.revision:"–")}</td></tr>
+      <tr><th>観測経路</th><td class="mono">GET /metrics・GET /admin/state（読み取り専用）＋ best-effort /healthz</td></tr>
+      <tr><th>対処経路</th><td class="mono">POST /admin/recover（HITL 承認後のみ・誤った対処は demo が拒否）</td></tr>
+    </table>
+    <div class="sec-cap">実観測値（エージェントの入力源・/metrics をそのまま表示）</div>
+    <pre class="raw-json">${esc(JSON.stringify(m,null,1))}</pre>`;
+  const sig=d.signals||{};
+  const rows=[["alert",sig.alert],["metrics",JSON.stringify(sig.metrics)],["recent_deploy",JSON.stringify(sig.recent_deploy)],
+    ["logs_sample",(sig.logs_sample||[]).join("\n")||"（なし）"],["trace_sample",sig.trace_sample||"（なし）"],
+    ["diff_summary",sig.diff_summary],["context",sig.context||"（なし）"]];
+  $("#svc-signals").innerHTML=`
+    <div class="page-note" style="margin-bottom:var(--sp-2)">ここに表示しているのは、診断を実行した時点でエージェントへ渡る入力です。上の実観測値に純関数 <code>signals_from_demo()</code> を適用した結果で、診断と同一の経路・関数を通したプレビューです。障害が無い間、診断エージェントは起動しません。新しい監視対象を足すときは、この写像関数を1つ書くだけで済みます（コネクタ契約 §5.1。エージェント・ベンチ・UI は変更不要）。</div>
+    <table class="kv-table">${rows.map(([k,v])=>`<tr><th class="mono">${k}</th><td class="mono" style="white-space:pre-wrap">${esc(v==null?"":v)}</td></tr>`).join("")}</table>`;
+  paintIcons($("#pg-services"));
+}
+function renderSvcPolicy(){
+  $("#svc-policy").innerHTML=`
+    <div class="sec-cap"><span class="tag-impl">実装済み</span>安全境界（コードで強制）</div>
+    <div class="page-note">自動許容はロールバック分類のみ。実行はすべて人間の承認後＝誤った対処は demo が拒否し、全試行を火事場帳に記録します。</div>
+    <div class="sec-cap"><span class="tag-road">🔜 ロードマップ（未実装の設計）</span></div>
+    <div class="page-note">マルチサービス／Cloud Monitoring・OTel コネクタ／ガード付きリリースはロードマップ。現在は単一サービスの一気通貫に集中しています。</div>`;
+}
+
+/* ---- メトリクス（実ポーリング値のみ・補間/ノイズなし） ---- */
+function chartSVG(data,spec,W,H){
+  const pad=8;
+  const t0=data[0].t,t1=data[data.length-1].t,span=Math.max(t1-t0,1);
+  const maxV=Math.max(spec.thresh*1.35,Math.max(...data.map(d=>d.v)),1e-9)*1.06;
+  const x=t=>pad+((t-t0)/span)*(W-2*pad),y=v=>H-pad-(v/maxV)*(H-2*pad);
+  const cur=data[data.length-1].v,col=cur>spec.thresh?COL.shu:COL.ink;
+  let s=`<line x1="${pad}" y1="${y(spec.thresh).toFixed(1)}" x2="${W-pad}" y2="${y(spec.thresh).toFixed(1)}" stroke="${COL.lineStrong}" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`;
+  if(data.length>1)s+=`<polyline points="${data.map(d=>x(d.t).toFixed(1)+","+y(d.v).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+  s+=data.map(d=>`<circle cx="${x(d.t).toFixed(1)}" cy="${y(d.v).toFixed(1)}" r="1.4" fill="${col}"/>`).join("");
+  return s;
+}
+function renderMetricsPage(){
+  if(VIEW!=="metrics")return;
+  const n=hist[METRICS[0].key].length;
+  $("#met-hint").textContent=n?`実サンプル ${n} 点 · 2.5s 間隔`:"";
+  let html=`<div class="page-note" style="margin-bottom:var(--sp-2)">表示は<b>実ポーリング値のみ</b>（2.5秒間隔・直近${CAP}点・リロードで消えます）。補間・ノイズ付与なし。点線の閾値は表示用です（エージェントは生の観測値で判断）。</div>`;
+  html+=METRICS.map(spec=>{
+    const a=hist[spec.key];
+    const cur=a.length?a[a.length-1].v:null,over=cur!=null&&cur>spec.thresh;
+    return `<div class="mchart">
+      <div class="mh"><b>${spec.label}</b><span class="page-note">${spec.id} · 閾値 ${spec.fmt(spec.thresh)}（表示用）</span><span class="mcur num${over?' bad':''}">${cur!=null?spec.fmt(cur):"—"}</span></div>
+      ${a.length?`<svg viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true">${chartSVG(a,spec,600,120)}</svg>
+      <div class="mx"><span>${hms(a[0].t)}</span><span>${hms(a[a.length-1].t)}</span></div>`
+      :`<div class="page-note" style="padding:var(--sp-2) 0">観測サンプルなし（ポーリング開始待ち）</div>`}
+    </div>`;
+  }).join("");
+  $("#met-body").innerHTML=html;
+}
+
+/* ---- Runbook（実KBブラウザ＋エージェントと同一の検索） ---- */
+const KINDJA={runbook:"Runbook",postmortem:"ポストモーテム",incident:"過去インシデント"};
+function mdView(text){
+  const out=[];
+  for(const raw of esc(text).split("\n")){
+    const h=raw.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+    if(/^### /.test(h))out.push(`<h4>${h.slice(4)}</h4>`);
+    else if(/^## /.test(h))out.push(`<h3>${h.slice(3)}</h3>`);
+    else if(/^# /.test(h))out.push(`<h2>${h.slice(2)}</h2>`);
+    else{const m=h.match(/^\s*[-*] (.*)/);if(m)out.push(`<div class="md-li">・${m[1]}</div>`);else if(h.trim())out.push(`<p>${h}</p>`);}
+  }
+  return out.join("");
+}
+async function renderRunbookPage(){
+  $("#kb-list").innerHTML=`<div class="page-note" style="padding:var(--sp-2)">読み込み中…</div>`;
+  let d;
+  try{d=await api("/api/kb/list");}
+  catch(e){if(VIEW==="runbook"&&!/認証が必要/.test(e.message||""))$("#kb-list").innerHTML=`<div class="page-note" style="padding:var(--sp-2)">取得に失敗: ${esc(e.message)}</div>`;return;}
+  if(VIEW!=="runbook")return;
+  $("#kb-hint").textContent=`${d.kb_size} 件`;
+  let html=`<div class="kb-search"><input id="kb-q" type="search" placeholder="エージェントと同一の検索（retriever.search）" aria-label="KB 検索"><button class="btn-ghost" id="kb-go" aria-label="検索">${svgIcon('search',13)}</button></div>`;
+  for(const kind of ["runbook","postmortem","incident"]){
+    const docs=(d.docs||[]).filter(x=>x.kind===kind);
+    if(!docs.length)continue;
+    html+=`<div class="nav-cap">${KINDJA[kind]}（${docs.length}）</div>`;
+    html+=docs.map(x=>`<button class="kb-item" data-source="${esc(x.source)}"><span class="kind-badge ${esc(x.kind)}">${KINDJA[x.kind]}</span><span class="kt" title="${esc(x.title)}">${esc(x.title)}</span><span class="ks num">${x.chars}字</span></button>`).join("");
+  }
+  $("#kb-list").innerHTML=html;
+  document.querySelectorAll("#kb-list .kb-item").forEach(b=>b.onclick=()=>openKbDoc(b.dataset.source));
+  $("#kb-go").onclick=kbSearch;
+  $("#kb-q").onkeydown=e=>{if(e.key==="Enter")kbSearch();};
+  $("#kb-doc-title").textContent="Doc / 検索";
+  $("#kb-view").innerHTML=`<div class="page-note">デモKB＝<b>合成サンプル＋HITL 承認済みポストモーテム</b>（実顧客データなし・各 doc 冒頭に provenance 明記）。検索はエージェントの RAG が使うものと<b>同一の <code>retriever.search()</code></b>（キーワード/BM25-lite・決定的）で、エージェントは各種別の上位2件・本文先頭700字を読みます。本番は同一 IF の背後を Vector Search 2.0 に差し替え。<br><br>復旧後に承認したポストモーテムは即時にこの一覧と検索対象に現れ、<b>次の診断から検索対象</b>になります（Cloud Run ではインスタンス寿命のみ＝永続化はロードマップ）。左の doc を選ぶか、検索してください。</div>`;
+}
+async function openKbDoc(source){
+  let d;
+  try{d=await api("/api/kb/doc?source="+encodeURIComponent(source));}
+  catch(e){toast("doc の取得に失敗: "+e.message);return;}
+  if(VIEW!=="runbook")return;
+  document.querySelectorAll("#kb-list .kb-item").forEach(b=>b.classList.toggle("active",b.dataset.source===source));
+  $("#kb-doc-title").textContent=d.source;
+  $("#kb-view").innerHTML=`<div class="md">${mdView(d.text)}</div>`;
+}
+async function kbSearch(){
+  const q=($("#kb-q").value||"").trim();if(!q)return;
+  let d;
+  try{d=await api("/api/kb/search?q="+encodeURIComponent(q)+"&k=5");}
+  catch(e){toast("検索に失敗: "+e.message);return;}
+  if(VIEW!=="runbook")return;
+  document.querySelectorAll("#kb-list .kb-item").forEach(b=>b.classList.remove("active"));
+  $("#kb-doc-title").textContent=`検索: ${q}`;
+  const hits=d.hits||[];
+  $("#kb-view").innerHTML=`<div class="page-note">エージェントと同一の <code>retriever.search()</code> の結果（スコア＝tf-idf 生値・無次元・決定的）。クリックで原文を開きます。</div>`
+    +(hits.length?hits.map(h=>`<button class="kb-hit" data-source="${esc(h.source)}"><div class="kh"><span class="kind-badge ${esc(h.kind)}">${esc(KINDJA[h.kind]||h.kind)}</span><span>${esc(h.title)}</span><span class="score num">score ${h.score}</span></div><div class="page-note" style="margin-top:4px">${esc(h.text.slice(0,180))}…</div></button>`).join("")
+    :`<div class="page-note" style="padding:var(--sp-3) 0">一致する doc はありません（スコア 0 の doc は返しません）。</div>`);
+  document.querySelectorAll("#kb-view .kb-hit").forEach(el=>el.onclick=()=>openKbDoc(el.dataset.source));
+}
+
+/* ---- 履歴（サーバ台帳＝追記専用・成功も拒否も記録） ---- */
+async function renderHistoryPage(){
+  let d;
+  try{d=await api("/api/incidents");}
+  catch(e){if(VIEW==="history"&&!/認証が必要/.test(e.message||""))$("#hist-body").innerHTML=`<div class="err-banner">${svgIcon('alert')}${esc(e.message)}</div>`;return;}
+  if(VIEW!=="history")return;
+  const s=d.summary||{};
+  $("#hist-hint").textContent=d.persistent?"":"インスタンス寿命のみ（エフェメラル）";
+  let html=`<div class="sum-grid" style="margin-bottom:var(--sp-3)">
+    <div class="sg"><div class="k">インシデント</div><div class="v num">${s.incidents||0}</div></div>
+    <div class="sg"><div class="k">復旧済み</div><div class="v num">${s.recovered||0}</div></div>
+    <div class="sg"><div class="k">平均 注入→復旧（サーバ実測）</div><div class="v num">${s.avg_recovery_s!=null?s.avg_recovery_s.toFixed(1)+"s":"—"}</div></div>
+    <div class="sg"><div class="k">診断コスト合計（実測）</div><div class="v num">${s.total_cost_yen!=null?"¥"+s.total_cost_yen.toFixed(2):"—"}</div></div>
+  </div>`;
+  const entries=d.entries||[];
+  if(!entries.length){
+    html+=`<div class="page-note">このセッションの記録はまだありません。インシデント画面から障害シナリオを注入すると、検知・診断・承認試行（成功も拒否も）・復旧がここに実タイムスタンプで記録されます。</div>`;
+  }else{
+    html+=`<table class="hist-table"><thead><tr><th>#</th><th>注入</th><th>診断（実測）</th><th>承認試行（HITL）</th><th>注入→復旧</th></tr></thead><tbody>`;
+    for(const e of entries){
+      if(e.type==="depscan"){
+        html+=`<tr><td>${svgIcon('shield',12)}</td><td><div>火の用心（防火スキャン）</div><div class="sub2 mono">${hms(e.ts*1000)}</div></td><td colspan="2">既知脆弱性 ${e.findings} 件検出（対象＝合成サンプル manifest・脆弱性データは OSV 実物）${e.assessment_available?"・LLM 安全性評価あり":"・LLM 評価なし（決定的結果のみ）"}</td><td>—</td></tr>`;
+        continue;
+      }
+      const v=e.verdict;
+      const att=(e.attempts||[]).map(a=>`<span class="att ${a.recovered?'ok':'no'}">${a.recovered?svgIcon('check',11):svgIcon('x',11)}${esc(Object.hasOwn(REM,a.action)?REM[a.action]:a.action)} · ${hms(a.ts*1000)}</span>`).join("")||`<span class="sub2">なし</span>`;
+      const cont=e.contained_ts?`<span class="att contain" title="うだつ（延焼防止・隔離）を実施した実タイムスタンプ">${svgIcon('tataki',11)}うだつ（延焼防止） · ${hms(e.contained_ts*1000)}</span>`:"";
+      const attDrop=e.attempts_dropped?`<span class="sub2">（他 ${e.attempts_dropped} 件省略）</span>`:"";
+      html+=`<tr>
+        <td class="mono">INC-${String(e.id).padStart(4,"0")}</td>
+        <td><div>${esc(CAT[e.fault]||e.fault)}</div><div class="sub2 mono">${hms(e.injected_ts*1000)}</div></td>
+        <td>${v?`<div>${esc(CAT[v.root_cause_category]||v.root_cause_category)} → <b>${esc(REM[v.remediation_type]||v.remediation_type)}</b></div><div class="sub2 num">確信度 ${v.confidence!=null?Math.round(v.confidence*100)+"%":"—"} · 直近 ¥${v.cost_yen!=null?v.cost_yen.toFixed(2):"—"} · ${v.latency_ms!=null?(v.latency_ms/1000).toFixed(1)+"s":"—"}${e.diag_runs>1?` · 診断 ${e.diag_runs} 回（計 ¥${(e.cost_total_yen!=null?e.cost_total_yen:0).toFixed(2)}）`:""}</div>`:`<span class="sub2">診断なし</span>`}</td>
+        <td>${cont}${att}${attDrop}</td>
+        <td class="mono">${e.duration_s!=null?e.duration_s.toFixed(1)+"s":(e.recovered_ts?"—":"未復旧")}</td></tr>`;
+    }
+    html+=`</tbody></table>`;
+  }
+  html+=`<div class="page-note" style="margin-top:var(--sp-3)">追記専用の実記録台帳（成功・拒否とも記録／保持はインスタンス寿命のみ）。注入→復旧は承認待ちを含むサーバ実測、¥ は実測トークン×単価表による推定です。</div>`;
+  $("#hist-body").innerHTML=html;
+}
+
+/* ---------- boot ---------- */
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2600);}
+buildChrome();
+$("#page-oncall").onclick=()=>toast("当番に通知しました（デモ）");
+$("#verdict").innerHTML=verdictEmpty();paintIcons($("#verdict"));
+renderFeed([],null);renderTimeline();renderInfo({},null);
+setInterval(()=>{$("#clock").textContent=hms(Date.now());if(lastFault&&incidentStart)$("#b-elapsed").textContent=((Date.now()-incidentStart)/1000).toFixed(0)+"s";},1000);
+poll();
+setInterval(()=>{const u=$("#unlock");if(!busy&&!(u&&u.classList.contains("show")))poll();},2500);
+</script>
+</body>
+</html>

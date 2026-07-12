@@ -1,0 +1,21 @@
+{
+  "id": "inc_010",
+  "title": "gateway: HPA設定ミスで最大レプリカ1に固定→負荷増で過負荷",
+  "difficulty": "medium",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "gateway 5xx 増 / レプリカ数が増えない",
+    "metrics": {"replicas": 1, "cpu_pct": [70, 88, 97], "error_rate": 0.09},
+    "recent_change": {"type": "config", "what": "HPA maxReplicas 10 -> 1 を誤適用", "applied_min_ago": 40},
+    "logs_sample": ["scaling blocked: at max replicas (1)", "config drift detected in hpa manifest"]
+  },
+  "ground_truth": {
+    "root_cause_category": "config_error",
+    "root_cause_keywords": ["HPA", "maxReplicas", "設定", "1に固定"],
+    "expected_tool_trajectory": ["read_metrics", "read_config", "search_past_incidents"],
+    "recommended_remediation_type": "config_fix",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["config", "hitl", "scaling-blocked"]
+}

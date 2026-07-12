@@ -1,0 +1,7 @@
+# demo イメージのビルドコンテキスト（demo/）から除外するもの。
+__pycache__
+*.pyc
+*.pyo
+.DS_Store
+README.md
+Dockerfile

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="HIKESHI — 江戸の火消しに学ぶ自律インシデント対応AIエージェント">
+  <defs>
+    <linearGradient id="scene" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F4EFE6"/><stop offset=".52" stop-color="#EFE6D6"/>
+      <stop offset=".72" stop-color="#4A3543"/><stop offset=".86" stop-color="#241D2C"/><stop offset="1" stop-color="#15131C"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".84" cy="1.05" r=".55">
+      <stop offset="0" stop-color="#E25A3C" stop-opacity=".55"/><stop offset=".55" stop-color="#E25A3C" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#E25A3C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="300" fill="url(#scene)"/>
+  <rect width="1200" height="300" fill="url(#glow)"/>
+  <circle cx="905" cy="120" r="2.4" fill="#E8A05C" opacity="0.85"/><circle cx="958" cy="88" r="1.8" fill="#E25A3C" opacity="0.7"/><circle cx="1012" cy="150" r="2.1" fill="#FFD9A0" opacity="0.8"/><circle cx="1054" cy="70" r="1.6" fill="#E25A3C" opacity="0.6"/><circle cx="1098" cy="132" r="2.6" fill="#E8A05C" opacity="0.85"/><circle cx="1140" cy="96" r="1.7" fill="#FFD9A0" opacity="0.7"/><circle cx="1166" cy="170" r="2.0" fill="#E25A3C" opacity="0.75"/><circle cx="980" cy="182" r="1.5" fill="#E8A05C" opacity="0.6"/><circle cx="1080" cy="205" r="1.8" fill="#FFD9A0" opacity="0.65"/><circle cx="930" cy="215" r="1.4" fill="#E25A3C" opacity="0.55"/>
+  <g transform="translate(-20,196) scale(1.45)" fill="#1E1826" opacity=".14"><path d="M8 72V47Q10 38 24 33H88Q102 38 104 47V72ZM20 29H92V33H20ZM18 27h6v4h-6ZM88 27h6v4h-6ZM122 72V40Q122 34 128 31L138 26Q142 24 146 26L156 31Q162 34 162 40V72ZM132 22H152V26H132ZM180 72L190 16H193L187 72ZM214 72L204 16H201L208 72ZM183 60L207 36L209 39L185 63ZM211 60L187 36L185 39L209 63ZM186 46H208V48.5H186ZM177 16H217V19H177ZM175 16Q197 5 219 16ZM194 25a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0ZM196.4 19h1.2v4h-1.2ZM232 72V52Q233 45 244 42H280Q290 45 292 52V72ZM242 39H282V42H242ZM296 72V54Q297 47 308 44H340Q350 47 352 54V72ZM306 41H342V44H306ZM366 72V44Q368 35 384 30H436Q450 35 452 44V72ZM380 26H438V30H380ZM378 24h6v4h-6ZM434 24h6v4h-6ZM474 72V50H480V72ZM534 72V50H540V72ZM466 50Q507 42 548 50L546 54Q507 47 468 54ZM470 44Q507 36 544 44L540 47Q507 40 474 47Z"/></g>
+  <g transform="translate(560,182) scale(1.62)" fill="#120F18" opacity=".9"><path d="M8 72V47Q10 38 24 33H88Q102 38 104 47V72ZM20 29H92V33H20ZM18 27h6v4h-6ZM88 27h6v4h-6ZM122 72V40Q122 34 128 31L138 26Q142 24 146 26L156 31Q162 34 162 40V72ZM132 22H152V26H132ZM180 72L190 16H193L187 72ZM214 72L204 16H201L208 72ZM183 60L207 36L209 39L185 63ZM211 60L187 36L185 39L209 63ZM186 46H208V48.5H186ZM177 16H217V19H177ZM175 16Q197 5 219 16ZM194 25a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0ZM196.4 19h1.2v4h-1.2ZM232 72V52Q233 45 244 42H280Q290 45 292 52V72ZM242 39H282V42H242ZM296 72V54Q297 47 308 44H340Q350 47 352 54V72ZM306 41H342V44H306ZM366 72V44Q368 35 384 30H436Q450 35 452 44V72ZM380 26H438V30H380ZM378 24h6v4h-6ZM434 24h6v4h-6ZM474 72V50H480V72ZM534 72V50H540V72ZM466 50Q507 42 548 50L546 54Q507 47 468 54ZM470 44Q507 36 544 44L540 47Q507 40 474 47Z"/></g>
+  <g transform="translate(64,58) scale(1.5)">
+    <rect x="47" y="60" width="6" height="26" rx="3" fill="#1C1C1C"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-42 50 37)"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-31.5 50 37)"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-21 50 37)"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(-10.5 50 37)"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(0 50 37)"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(10.5 50 37)"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(21 50 37)"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(31.5 50 37)"/><rect x="48.6" y="37" width="2.8" height="23" rx="1.4" fill="#1C1C1C" transform="rotate(42 50 37)"/>
+    <rect x="40" y="33" width="20" height="5" rx="2.5" fill="#1C1C1C"/>
+    <rect x="37" y="7" width="26" height="26" rx="3" transform="rotate(45 50 20)" fill="none" stroke="#B8392C" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="44.54" y="14.54" width="10.92" height="10.92" rx="2" transform="rotate(45 50 20)" fill="#B8392C"/>
+  </g>
+  <g font-family="'Shippori Mincho','Hiragino Mincho ProN','Yu Mincho',serif">
+    <text x="248" y="138" font-size="64" font-weight="700" letter-spacing="12" fill="#1C1C1C">HIKESHI</text>
+    
+    <text x="252" y="180" font-size="25" letter-spacing="2" fill="#3E382E">江戸の火消しに学ぶ、</text><text x="252" y="216" font-size="25" letter-spacing="2" fill="#3E382E">自律インシデント対応AIエージェント</text>
+    
+    
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+{
+  "id": "inc_011",
+  "title": "profile-api: スキーマ変更後にキャッシュ毒化（古い形のオブジェクト配信）",
+  "difficulty": "hard",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "profile 表示崩れの問い合わせ増 / 一部ユーザーで旧スキーマのフィールド欠落",
+    "metrics": {"cache_hit_rate": 0.98, "error_rate": 0.006},
+    "recent_deploy": {"service": "profile-api", "revision": "profile-api-00045", "deployed_min_ago": 30, "note": "プロフィールスキーマに項目追加"},
+    "logs_sample": ["serving cached profile without new field", "cache key not versioned by schema"]
+  },
+  "ground_truth": {
+    "root_cause_category": "data_cache_issue",
+    "root_cause_keywords": ["キャッシュ", "スキーマ", "毒化", "未バージョニング"],
+    "expected_tool_trajectory": ["read_logs", "read_metrics", "check_cache", "search_runbook"],
+    "recommended_remediation_type": "cache_flush",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["cache", "not-rollback", "tests-judgment", "hitl"]
+}

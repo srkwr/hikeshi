@@ -1,0 +1,14 @@
+# Hikeshi 運用コンソール（HITL 承認 UI ＋ agent↔demo 配線）。
+# demo（victim service）を HTTP 観測/操作し、診断は実 ADK エージェントを Vertex/Gemini で走らせる。
+# 再現性のため厳密固定（demo/requirements.txt と同方針）。
+fastapi==0.136.3
+uvicorn[standard]==0.49.0
+httpx==0.28.1
+google-adk==2.2.0
+# Cloud Run サービス間認証（demo を IAM 非公開にし console から ID トークンで呼ぶ）。
+# [requests] extra を明示＝ID トークン取得が使う google.auth.transport.requests の
+# 依存 requests を google-adk の推移依存に頼らず確実に入れる。
+google-auth[requests]==2.53.0
+# Elasticsearch リトリーババックエンド（任意・既定 off・HIKESHI_ES_URL 設定時のみ使用）。
+# レンジは pyproject の extras [es] と同一。未設定時は遅延 import のため一切実行されない。
+elasticsearch>=8,<9

@@ -1,0 +1,22 @@
+{
+  "id": "inc_007",
+  "title": "search-api: キャンペーン流入でCPU飽和→レイテンシ悪化（デプロイは無関係）",
+  "difficulty": "medium",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "search-api p95 320ms -> 2400ms / CPU使用率 96% / スロットリング発生",
+    "metrics": {"cpu_pct": [62, 78, 91, 96], "qps": [400, 900, 1700, 2300], "latency_p95_ms": [320, 800, 1600, 2400]},
+    "recent_deploy": {"service": "search-api", "revision": "search-api-00088", "deployed_min_ago": 35, "note": "文言修正のみ・ロジック変更なし"},
+    "logs_sample": ["CPU throttling", "request queue depth rising", "no errors, just slow"],
+    "context": "マーケのキャンペーン開始時刻と流入急増が一致。QPSが5.7x。"
+  },
+  "ground_truth": {
+    "root_cause_category": "resource_exhaustion",
+    "root_cause_keywords": ["CPU飽和", "QPS", "流入急増", "スロットリング"],
+    "expected_tool_trajectory": ["read_metrics", "read_logs", "check_quota", "search_runbook"],
+    "recommended_remediation_type": "scale",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["resource", "scale", "red-herring-deploy", "tests-judgment", "hitl"]
+}

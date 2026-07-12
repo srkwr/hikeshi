@@ -1,0 +1,21 @@
+{
+  "id": "inc_012",
+  "title": "notif-svc: 環境変数の誤設定でSMTPホスト不到達→メール送信全失敗",
+  "difficulty": "easy",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "notif-svc メール送信成功率 99% -> 0% / 'host not found' ログ",
+    "metrics": {"send_success_rate": 0.0, "error_rate": 1.0},
+    "recent_change": {"type": "config", "what": "SMTP_HOST を 'smtp.internal' から 'smtp.intenal'(typo) に変更", "applied_min_ago": 10},
+    "logs_sample": ["getaddrinfo ENOTFOUND smtp.intenal", "all outbound mail failing"]
+  },
+  "ground_truth": {
+    "root_cause_category": "config_error",
+    "root_cause_keywords": ["SMTP_HOST", "typo", "設定", "不到達"],
+    "expected_tool_trajectory": ["read_logs", "read_config"],
+    "recommended_remediation_type": "config_fix",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["config", "hitl", "typo"]
+}

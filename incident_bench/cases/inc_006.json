@@ -1,0 +1,22 @@
+{
+  "id": "inc_006",
+  "title": "web-bff: デプロイ直後にNullPointerで5xx急増（レスポンス整形のregression）",
+  "difficulty": "easy",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "web-bff 5xx 0.3% -> 11% (5分継続) / 'NullPointerException' ログ多数",
+    "metrics": {"error_rate": 0.11, "latency_p95_ms": [180, 185, 190]},
+    "recent_deploy": {"service": "web-bff", "revision": "web-bff-00120", "prev_revision": "web-bff-00119", "deployed_min_ago": 6},
+    "logs_sample": ["NullPointerException at ResponseShaper.format()", "field 'discount' missing after rev 00120"],
+    "diff_summary": "rev 00120 がレスポンス整形で discount を必須前提に変更（null 未対応）"
+  },
+  "ground_truth": {
+    "root_cause_category": "deploy_regression",
+    "root_cause_keywords": ["NullPointer", "rev 00120", "レスポンス整形", "デプロイ"],
+    "expected_tool_trajectory": ["read_logs", "read_metrics", "list_revisions", "diff_revision"],
+    "recommended_remediation_type": "rollback",
+    "is_reversible": true,
+    "auto_remediable": true
+  },
+  "tags": ["deploy", "rollback", "regression"]
+}

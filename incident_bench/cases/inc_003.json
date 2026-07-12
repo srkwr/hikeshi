@@ -1,0 +1,21 @@
+{
+  "id": "inc_003",
+  "title": "feed-worker: メモリ漸増→OOMKilledで再起動ループ",
+  "difficulty": "medium",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "feed-worker OOMKilled x4 (30分) / メモリ使用率 上昇トレンド",
+    "metrics": {"memory_pct": [55, 68, 81, 94], "restarts": 4},
+    "recent_deploy": {"service": "feed-worker", "revision": "feed-worker-00018", "prev_revision": "feed-worker-00017", "deployed_min_ago": 95},
+    "logs_sample": ["Killed process (OOM)", "heap growth without bound after rev 18"]
+  },
+  "ground_truth": {
+    "root_cause_category": "resource_exhaustion",
+    "root_cause_keywords": ["OOM", "メモリリーク", "rev 18", "再起動"],
+    "expected_tool_trajectory": ["read_metrics", "read_logs", "search_postmortem"],
+    "recommended_remediation_type": "rollback",
+    "is_reversible": true,
+    "auto_remediable": true
+  },
+  "tags": ["resource", "leading-indicator", "proactive"]
+}

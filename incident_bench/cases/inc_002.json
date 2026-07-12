@@ -1,0 +1,21 @@
+{
+  "id": "inc_002",
+  "title": "payments-api: デプロイ直後にDB接続タイムアウト多発（設定ミス）",
+  "difficulty": "medium",
+  "provenance": "synthetic",
+  "signals": {
+    "alert": "payments-api 5xx 急増 + 'connection timeout' ログ多数",
+    "metrics": {"error_rate": 0.21, "latency_p95_ms": [240, 250, 260]},
+    "recent_deploy": {"service": "payments-api", "revision": "payments-api-00031", "deployed_min_ago": 12, "config_change": "DB_CONN_TIMEOUT_MS 5000 -> 50"},
+    "logs_sample": ["OperationalError: connection timeout after 50ms", "connection pool exhausted"]
+  },
+  "ground_truth": {
+    "root_cause_category": "config_error",
+    "root_cause_keywords": ["DB_CONN_TIMEOUT_MS", "50ms", "設定", "タイムアウト"],
+    "expected_tool_trajectory": ["read_logs", "read_recent_deploy", "search_past_incidents"],
+    "recommended_remediation_type": "config_fix",
+    "is_reversible": true,
+    "auto_remediable": false
+  },
+  "tags": ["config", "hitl"]
+}
